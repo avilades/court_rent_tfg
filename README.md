@@ -22,6 +22,22 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 5.  Abre tu navegador en: [http://localhost:8000](http://localhost:8000)
 
+## Acceso a la Base de Datos (pgAdmin)
+
+La aplicación incluye pgAdmin 4 preconfigurado para gestionar la base de datos.
+
+1.  Accede a: [http://localhost:5050](http://localhost:5050)
+2.  Inicia sesión en pgAdmin con:
+    *   **Email**: `admin@admin.com`
+    *   **Password**: `root`
+3.  Añade un nuevo servidor ("Add New Server") con los siguientes datos:
+    *   **General** > **Name**: `Court Rent DB` (o el que prefieras)
+    *   **Connection** > **Host name/address**: `db`
+    *   **Connection** > **Port**: `5432`
+    *   **Connection** > **Username**: `user`
+    *   **Connection** > **Password**: `password`
+    *   **Connection** > **Maintenance database**: `court_rent`
+
 ## Funcionalidades
 
 *   **Usuarios**: Registro y Login.

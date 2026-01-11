@@ -2,6 +2,11 @@
     "name": "Court Rent App",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
+    "runServices": [
+        "app",
+        "db",
+        "pgadmin"
+    ],
     "workspaceFolder": "/workspace",
     "features": {
         "ghcr.io/devcontainers/features/python:1": {
