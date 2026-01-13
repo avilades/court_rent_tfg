@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from . import models, database, crud, dependencies
 from .routers import auth, bookings, admin, users
+from .insert_schedules import initialize_schedules
 
 # Create Database Tables if they don't exist
 # In production, use Alembic for migrations!
@@ -26,13 +27,14 @@ app.include_router(bookings.router)
 app.include_router(admin.router)
 # app.include_router(users.router) # To be implemented
 
-# Initialize Data (Courts)
+# Initialize Data (Courts, Prices, Schedules)
 @app.on_event("startup")
 def startup_event():
     db = next(database.get_db())
     crud.initialize_admin_user(db)
     crud.initialize_courts(db)
     crud.initialize_prices(db)
+    initialize_schedules(db)
 
 # --- Frontend Routes ---
 # These return HTML instead of JSON

@@ -13,16 +13,40 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
+# --- Admin user Operattions ---
+
+def initialize_admin_user(db: Session):
+    """Creates admin user if it dosen't exist."""
+    if db.query(models.User).filter(models.User.name == "admin").count() == 0:
+        create_user(db, schemas.UserCreate(name="admin", surname="admin", email="admin@example.com", password="admin000"))
+    
+    """check admin permission"""
+    if db.query(models.User).join(models.Permission).filter(
+             models.User.name == "admin"
+            ,models.Permission.is_admin == True
+            ,models.Permission.can_edit_schedule == True
+            ,models.Permission.can_edit_price == True
+        ).count() == 0:
+        """update admin permission"""
+        update_admin_user_permission(db, db.query(models.User).filter(models.User.name == "admin").first().user_id)
+
+def update_admin_user_permission(db: Session, user_id: int):
+    """update admin permission"""
+    db.query(models.Permission).filter(
+        models.Permission.user_id == user_id
+    ).update({
+        models.Permission.is_admin: True,
+        models.Permission.can_edit_schedule: True,
+        models.Permission.can_edit_price: True
+    })
+    db.commit() 
+
 # --- User Operations ---
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
-def initialize_admin_user(db: Session):
-    """Creates the 8 courts if they don't exist."""
-    if db.query(models.User).filter(models.User.name == "admin").count() == 0:
-        create_user(db, schemas.UserCreate(name="admin", surname="admin", email="admin@example.com", password="admin000"))
-
+    
 
 def create_user(db: Session, user: schemas.UserCreate):
     # 1. Hash the password
