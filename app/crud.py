@@ -18,6 +18,12 @@ def get_password_hash(password):
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
+def initialize_admin_user(db: Session):
+    """Creates the 8 courts if they don't exist."""
+    if db.query(models.User).filter(models.User.name == "admin").count() == 0:
+        create_user(db, schemas.UserCreate(name="admin", surname="admin", email="admin@example.com", password="admin000"))
+
+
 def create_user(db: Session, user: schemas.UserCreate):
     # 1. Hash the password
     fake_hashed_password = get_password_hash(user.password)

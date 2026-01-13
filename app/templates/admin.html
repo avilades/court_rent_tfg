@@ -26,6 +26,9 @@
 </div>
 
 <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
     // In a full implementation, we would check permissions here
     // and redirect if !can_edit_schedule && !can_edit_price
 </script>

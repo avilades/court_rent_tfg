@@ -30,6 +30,7 @@ app.include_router(admin.router)
 @app.on_event("startup")
 def startup_event():
     db = next(database.get_db())
+    crud.initialize_admin_user(db)
     crud.initialize_courts(db)
     crud.initialize_prices(db)
 
