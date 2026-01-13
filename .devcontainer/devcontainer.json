@@ -1,5 +1,5 @@
 {
-    "name": "Court Rent App",
+    "name": "Alquiler de pistas App",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
     "runServices": [
@@ -17,6 +17,7 @@
         "vscode": {
             "extensions": [
                 "ms-python.python",
+                "ms-python.debugpy",
                 "ms-python.vscode-pylance"
             ]
         }

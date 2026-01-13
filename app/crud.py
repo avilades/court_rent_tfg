@@ -13,40 +13,10 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-# --- Admin user Operattions ---
-
-def initialize_admin_user(db: Session):
-    """Creates admin user if it dosen't exist."""
-    if db.query(models.User).filter(models.User.name == "admin").count() == 0:
-        create_user(db, schemas.UserCreate(name="admin", surname="admin", email="admin@example.com", password="admin000"))
-    
-    """check admin permission"""
-    if db.query(models.User).join(models.Permission).filter(
-             models.User.name == "admin"
-            ,models.Permission.is_admin == True
-            ,models.Permission.can_edit_schedule == True
-            ,models.Permission.can_edit_price == True
-        ).count() == 0:
-        """update admin permission"""
-        update_admin_user_permission(db, db.query(models.User).filter(models.User.name == "admin").first().user_id)
-
-def update_admin_user_permission(db: Session, user_id: int):
-    """update admin permission"""
-    db.query(models.Permission).filter(
-        models.Permission.user_id == user_id
-    ).update({
-        models.Permission.is_admin: True,
-        models.Permission.can_edit_schedule: True,
-        models.Permission.can_edit_price: True
-    })
-    db.commit() 
-
 # --- User Operations ---
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
-
-    
+    return db.query(models.User).filter(models.User.email == email).first()  
 
 def create_user(db: Session, user: schemas.UserCreate):
     # 1. Hash the password
@@ -80,25 +50,6 @@ def create_user(db: Session, user: schemas.UserCreate):
 # --- Court Operations ---
 def get_courts(db: Session):
     return db.query(models.Court).all()
-
-def initialize_courts(db: Session):
-    """Creates the 8 courts if they don't exist."""
-    if db.query(models.Court).count() == 0:
-        for i in range(1, 9):
-            court = models.Court(court_id=i, is_covered=(i > 4)) # Example: 5-8 covered
-            db.add(court)
-        db.commit()
-
-def initialize_prices(db: Session):
-    """Creates a default price if none exist."""
-    if db.query(models.Price).count() == 0:
-        default_price = models.Price(
-            price_id=1,
-            amount=10, # 10 currency units
-            description="Default Price"
-        )
-        db.add(default_price)
-        db.commit()
 
 # --- Booking Operations ---
 def get_user_bookings(db: Session, user_id: int, date_from: str = None, date_to: str = None):
@@ -149,17 +100,23 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     if existing:
         return None # Conflict
 
-    # Find price from Schedule based on day of week and time
+    # Find price from Schedule based on day of week and time, joining with active Price
     day_of_week = start_dt.weekday()
     time_obj = start_dt.time()
     
-    schedule = db.query(models.Schedule).filter(
+    result = db.query(models.Schedule, models.Price).join(
+        models.Price, models.Price.demand_id == models.Schedule.demand_id
+    ).filter(
         models.Schedule.day_of_week == day_of_week,
-        models.Schedule.start_time == time_obj
+        models.Schedule.start_time == time_obj,
+        models.Price.is_active == True
     ).first()
     
-    # Use schedule's price_id if found, otherwise fallback to 1
-    price_id = schedule.price_id if schedule and schedule.price_id else 1
+    # Use found price_id, fallback to a sensible default if not found
+    price_id = result[1].price_id if result else None
+    
+    if not price_id:
+        return None # Should not happen with correct initialization
     
     new_booking = models.Booking(
         user_id=user_id,
@@ -172,7 +129,7 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     db.commit()
     db.refresh(new_booking)
     
-    # Return with price_amount for response
+    # Return with relevant info
     return {
         "booking_id": new_booking.booking_id,
         "court_id": new_booking.court_id,

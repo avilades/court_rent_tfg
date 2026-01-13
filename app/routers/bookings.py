@@ -76,17 +76,19 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
             key = f"{b.court_id}_{b.start_time.strftime('%H:%M')}"
             booked_keys.add(key)
     
-    # Query schedules for prices
-    schedules = db.query(models.Schedule).filter(
-        models.Schedule.day_of_week == day_of_week
+    # Query schedules and join with prices to get the active price for each demand
+    results = db.query(models.Schedule, models.Price).join(
+        models.Price, models.Price.demand_id == models.Schedule.demand_id
+    ).filter(
+        models.Schedule.day_of_week == day_of_week,
+        models.Price.is_active == True
     ).all()
     
     # Create a map of time -> price_amount
     time_price_map = {}
-    for sched in schedules:
+    for sched, price in results:
         time_str = sched.start_time.strftime('%H:%M')
-        if sched.price_config:
-            time_price_map[time_str] = sched.price_config.amount
+        time_price_map[time_str] = price.amount
     
     for court in courts:
         for t_str in start_times:

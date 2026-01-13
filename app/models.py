@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -56,6 +56,17 @@ class Court(Base):
 
     bookings = relationship("Booking", back_populates="court")
 
+class Demand(Base):
+    """
+    Store relation between price and demand
+    """
+    __tablename__ = "demands"
+
+    demand_id = Column(Integer, primary_key=True, index=True)
+    description = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+
 class Price(Base):
     """
     Historical record of prices.
@@ -64,14 +75,16 @@ class Price(Base):
     __tablename__ = "prices"
 
     price_id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Integer, nullable=False) # 'Priceo' (Assuming cents or whole currency unit)
+    amount = Column(Float, nullable=False) # 'Priceo' (Assuming cents or whole currency unit)
     start_date = Column(DateTime, default=datetime.utcnow)
     end_date = Column(DateTime, nullable=True) # Open-ended by default until replaced
     description = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    demand_id = Column(Integer, ForeignKey("demands.demand_id"), nullable=False)
 
-    # Relationship to historical bookings and schedules
+    # Relationship to historical bookings, schedules and demand
     bookings = relationship("Booking", back_populates="price_snapshot")
-    schedules = relationship("Schedule", back_populates="price_config")
+    demand = relationship("Demand")
 
 class Schedule(Base):
     """
@@ -84,11 +97,14 @@ class Schedule(Base):
     day_of_week = Column(Integer, nullable=False) # 0=Monday, 6=Sunday
     is_weekend = Column(Boolean, default=False)
     start_time = Column(Time, nullable=False) # e.g., 08:00:00
+    demand_id = Column(Integer, ForeignKey("demands.demand_id"), nullable=False)
+    
+    # Relationship to demand
+    demand = relationship("Demand")
     
     # Current active price for this slot
-    price_id = Column(Integer, ForeignKey("prices.price_id"))
+    #price_id = Column(Integer, ForeignKey("prices.price_id"))
     
-    price_config = relationship("Price", back_populates="schedules")
 
 class Holiday(Base):
     """

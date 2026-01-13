@@ -3,10 +3,15 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+import logging
 
-from . import models, database, crud, dependencies
+from . import models, database, dependencies
 from .routers import auth, bookings, admin, users
-from .insert_schedules import initialize_schedules
+from .initialize import initialize_schedules, initialize_prices, initialize_courts, initialize_admin_user, initialize_demands
+from .logging_config import setup_logging
+
+# Configure logging
+setup_logging()
 
 # Create Database Tables if they don't exist
 # In production, use Alembic for migrations!
@@ -31,9 +36,10 @@ app.include_router(admin.router)
 @app.on_event("startup")
 def startup_event():
     db = next(database.get_db())
-    crud.initialize_admin_user(db)
-    crud.initialize_courts(db)
-    crud.initialize_prices(db)
+    initialize_admin_user(db)    
+    initialize_demands(db)
+    initialize_prices(db)
+    initialize_courts(db)
     initialize_schedules(db)
 
 # --- Frontend Routes ---

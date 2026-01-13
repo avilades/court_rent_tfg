@@ -135,6 +135,12 @@
         });
     }
 
+    function formatTime(date) {
+        const d = new Date(date);
+        return d.getHours().toString().padStart(2, '0') + ':' +
+            d.getMinutes().toString().padStart(2, '0');
+    }
+
     function selectTime(timeStr, btnElement) {
         selectedTime = timeStr;
 
@@ -153,10 +159,8 @@
         container.innerHTML = '';
 
         // Filter slots that match the selected time
-        // Note: We need to match the time string format
         const relevantSlots = allSlots.filter(s => {
-            const sTime = new Date(s.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return sTime === timeStr;
+            return formatTime(s.start_time) === timeStr;
         });
 
         relevantSlots.forEach(slot => {
@@ -175,7 +179,7 @@
     }
 
     async function confirmBooking(slot) {
-        const timeStr = new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = formatTime(slot.start_time);
         const priceText = slot.price_amount ? `${slot.price_amount}€` : '';
         if (!confirm(`¿Confirmar reserva para la Pista ${slot.court_id} a las ${timeStr} el ${dateInput.value}?${priceText ? '\nPrecio: ' + priceText : ''}`)) return;
 
