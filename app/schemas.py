@@ -63,6 +63,7 @@ class SlotBase(BaseModel):
     start_time: datetime # Full ISO timestamp
     end_time: datetime
     is_available: bool
+    price_amount: Optional[int] = None  # Price for this slot
 
 # --- Booking Schemas ---
 class BookingCreate(BaseModel):

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Reserva una Pista</h2>
+        <a href="/dashboard" class="btn-secondary">Volver al Panel</a>
+    </div>
+
+    <!-- Step 1: Date Selection -->
+    <div id="step-date" class="booking-step">
+        <h3>1. Selecciona una fecha</h3>
+        <div class="form-group">
+            <input type="date" id="booking-date" onchange="loadTimeSlots()">
+        </div>
+    </div>
+
+    <!-- Step 2: Time Selection -->
+    <div id="step-time" class="booking-step" style="display:none;">
+        <h3>2. Selecciona una hora</h3>
+        <div id="time-slots-container" class="slots-grid">
+            <!-- Time buttons injected here -->
+        </div>
+    </div>
+
+    <!-- Step 3: Court Selection -->
+    <div id="step-court" class="booking-step" style="display:none;">
+        <h3 id="court-selection-title">3. Selecciona una pista</h3>
+        <div id="courts-container" class="slots-grid">
+            <!-- Court cards injected here -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .booking-step {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .time-btn {
+        padding: 10px 20px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1.1em;
+        transition: background 0.2s;
+    }
+
+    .time-btn:hover,
+    .time-btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #0056b3;
+    }
+
+    .court-card-select {
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .court-card-select:hover {
+        transform: translateY(-2px);
+        border-color: #007bff;
+    }
+</style>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    // Set today as min date
+    const dateInput = document.getElementById('booking-date');
+    dateInput.min = new Date().toISOString().split('T')[0];
+    dateInput.valueAsDate = new Date();
+
+    let allSlots = [];
+    let selectedTime = null;
+
+    async function loadTimeSlots() {
+        const date = dateInput.value;
+        if (!date) return;
+
+        // Reset subsequent steps
+        document.getElementById('step-time').style.display = 'block';
+        document.getElementById('step-court').style.display = 'none';
+        document.getElementById('time-slots-container').innerHTML = '<p>Cargando...</p>';
+
+        const res = await fetch(`/bookings/search?date=${date}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+            allSlots = await res.json();
+            renderTimeSlots();
+        } else {
+            alert('Error al cargar horarios');
+        }
+    }
+
+    function renderTimeSlots() {
+        const container = document.getElementById('time-slots-container');
+        container.innerHTML = '';
+
+        if (allSlots.length === 0) {
+            container.innerHTML = '<p>No hay disponibilidad para esta fecha.</p>';
+            return;
+        }
+
+        // Group by time string to find unique times, but keep one representative for sorting
+        const timeMap = new Map();
+        allSlots.forEach(s => {
+            const dateObj = new Date(s.start_time);
+            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (!timeMap.has(timeStr)) {
+                timeMap.set(timeStr, dateObj); // Store the Date object for sorting
+            }
+        });
+
+        // Sort by the Date object
+        const sortedTimes = Array.from(timeMap.entries()).sort((a, b) => a[1] - b[1]);
+
+        sortedTimes.forEach(([timeStr, dateObj]) => {
+            const btn = document.createElement('button');
+            btn.className = 'time-btn';
+            btn.textContent = timeStr;
+            btn.onclick = () => selectTime(timeStr, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function selectTime(timeStr, btnElement) {
+        selectedTime = timeStr;
+
+        // Update UI
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        // Show courts
+        document.getElementById('step-court').style.display = 'block';
+        document.getElementById('court-selection-title').textContent = `3. Selecciona una pista (para ${timeStr})`;
+        renderCourtsForTime(timeStr);
+    }
+
+    function renderCourtsForTime(timeStr) {
+        const container = document.getElementById('courts-container');
+        container.innerHTML = '';
+
+        // Filter slots that match the selected time
+        // Note: We need to match the time string format
+        const relevantSlots = allSlots.filter(s => {
+            const sTime = new Date(s.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return sTime === timeStr;
+        });
+
+        relevantSlots.forEach(slot => {
+            const div = document.createElement('div');
+            div.className = 'court-card-select';
+            const priceText = slot.price_amount ? `${slot.price_amount}€` : 'Precio no disponible';
+            div.innerHTML = `
+                <h4>Pista ${slot.court_id}</h4>
+                <p>Disponible</p>
+                <p style="font-weight:bold; color:#007bff;">${priceText}</p>
+                <button class="btn-primary" style="margin-top:10px;">Reservar Ahora</button>
+            `;
+            div.onclick = () => confirmBooking(slot);
+            container.appendChild(div);
+        });
+    }
+
+    async function confirmBooking(slot) {
+        const timeStr = new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const priceText = slot.price_amount ? `${slot.price_amount}€` : '';
+        if (!confirm(`¿Confirmar reserva para la Pista ${slot.court_id} a las ${timeStr} el ${dateInput.value}?${priceText ? '\nPrecio: ' + priceText : ''}`)) return;
+
+        const res = await fetch('/bookings/book', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                court_id: slot.court_id,
+                date: dateInput.value,
+                time_slot: timeStr
+            })
+        });
+
+        if (res.ok) {
+            alert('¡Reserva confirmada!');
+            window.location.href = '/reservations';
+        } else {
+            const err = await res.json();
+            alert('Error: ' + err.detail);
+        }
+    }
+
+    // Initial load
+    loadTimeSlots();
+</script>
+{% endblock %}

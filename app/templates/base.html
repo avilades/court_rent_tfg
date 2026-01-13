@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Court Rent App</title>
+    <title>Reserva de Pista</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
     <header>
-        <h1>🎾 Court Rent</h1>
+        <h1>🎾 Reserva de Pista</h1>
         <nav id="nav-links">
             <!-- Dynamic Navigation populated by JS based on auth state -->
-            <a href="/dashboard">Dashboard</a>
-            <a href="#" onclick="logout()">Logout</a>
+            <a href="/dashboard">Panel</a>
+            <a href="#" onclick="logout()">Cerrar Sesión</a>
         </nav>
     </header>
 
@@ -32,7 +32,7 @@
         const token = localStorage.getItem('token');
         const nav = document.getElementById('nav-links');
         if (!token) {
-            nav.innerHTML = '<a href="/">Login</a> <a href="/register">Register</a>';
+            nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
         }
     </script>
 </body>

@@ -1,146 +1,75 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Welcome back!</h2>
+<div class="dashboard-menu">
+    <h2>Bienvenido</h2>
+    <p>Seleccione una opción para continuar:</p>
 
-<!-- Search Section -->
-<div class="card">
-    <h3>Book a Court</h3>
-    <div class="form-group">
-        <label>Select Date:</label>
-        <input type="date" id="search-date">
-    </div>
-    <button onclick="searchSlots()">Search Available Slots</button>
+    <div class="menu-grid">
+        <a href="/book" class="menu-card">
+            <div class="icon">🎾</div>
+            <h3>Reservar Pista</h3>
+            <p>Reserva una pista</p>
+        </a>
 
-    <div id="slots-container" style="margin-top: 20px;" class="slots-grid">
-        <!-- Slots injected here -->
+        <a href="/reservations" class="menu-card">
+            <div class="icon">📅</div>
+            <h3>Ver Reservas</h3>
+            <p>Ver tus reservas</p>
+        </a>
     </div>
 </div>
 
-<!-- My Bookings Section -->
-<div class="card">
-    <h3>My Bookings</h3>
-    <table id="bookings-table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Court</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Bookings injected here -->
-        </tbody>
-    </table>
-</div>
+<style>
+    .dashboard-menu {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .menu-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eee;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        border-color: #007bff;
+    }
+
+    .menu-card .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .menu-card h3 {
+        color: #007bff;
+        margin: 0.5rem 0;
+    }
+
+    .menu-card p {
+        color: #666;
+    }
+</style>
 
 <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = '/';
-
-    // Set today as default
-    document.getElementById('search-date').valueAsDate = new Date();
-
-    async function loadBookings() {
-        const res = await fetch('/bookings/my-bookings', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (res.ok) {
-            const bookings = await res.json();
-            const tbody = document.querySelector('#bookings-table tbody');
-            tbody.innerHTML = '';
-            bookings.forEach(b => {
-                const dateObj = new Date(b.start_time);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                <td>${dateObj.toLocaleDateString()}</td>
-                <td>${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                <td>Court ${b.court_id}</td>
-                <td>${b.is_cancelled ? '<span style="color:red">Cancelled</span>' : '<span style="color:green">Active</span>'}</td>
-                <td>
-                    ${!b.is_cancelled ? `<button class="btn-danger" onclick="cancelBooking(${b.booking_id})">Cancel</button>` : '-'}
-                </td>
-             `;
-                tbody.appendChild(tr);
-            });
-        }
-    }
-
-    async function searchSlots() {
-        const date = document.getElementById('search-date').value;
-        const res = await fetch(`/bookings/search?date=${date}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const container = document.getElementById('slots-container');
-        container.innerHTML = '';
-
-        if (res.ok) {
-            const slots = await res.json();
-            if (slots.length === 0) {
-                container.innerHTML = '<p>No slots available.</p>';
-                return;
-            }
-
-            slots.forEach(slot => {
-                const div = document.createElement('div');
-                div.className = 'slot-card';
-                const timeStr = new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                div.innerHTML = `
-                <h4>Court ${slot.court_id}</h4>
-                <p>🕒 ${timeStr}</p>
-                <small>90 mins</small>
-            `;
-
-                div.onclick = () => bookSlot(slot.court_id, date, timeStr);
-                container.appendChild(div);
-            });
-        }
-    }
-
-    async function bookSlot(courtId, date, time) {
-        if (!confirm(`Confirm booking for Court ${courtId} at ${time}?`)) return;
-
-        const res = await fetch('/bookings/book', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                court_id: courtId,
-                date: date,
-                time_slot: time
-            })
-        });
-
-        if (res.ok) {
-            alert('Booking confirmed!\nCancellation policy: Cancel <24h before = 25% penalty.');
-            loadBookings();
-            searchSlots(); // Refresh
-        } else {
-            const err = await res.json();
-            alert('Error: ' + err.detail);
-        }
-    }
-
-    async function cancelBooking(id) {
-        if (!confirm('Are you sure you want to cancel?')) return;
-
-        const res = await fetch(`/bookings/cancel/${id}`, {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-
-        if (res.ok) {
-            alert('Reserva cancelada');
-            loadBookings();
-        }
-    }
-
-    // Init
-    loadBookings();
 </script>
 {% endblock %}

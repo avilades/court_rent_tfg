@@ -71,12 +71,39 @@ def initialize_prices(db: Session):
         db.commit()
 
 # --- Booking Operations ---
-def get_user_bookings(db: Session, user_id: int):
-    # Order by booking time descending (newest first)
-    return db.query(models.Booking)\
-             .filter(models.Booking.user_id == user_id)\
-             .order_by(models.Booking.start_time.desc())\
-             .all()
+def get_user_bookings(db: Session, user_id: int, date_from: str = None, date_to: str = None):
+    """Order by booking time descending (newest first) and include price_amount.
+    Optionally filter by date range."""
+    from datetime import datetime, timedelta
+    
+    query = db.query(models.Booking).filter(models.Booking.user_id == user_id)
+    
+    # Apply date filters if provided
+    if date_from:
+        from_date = datetime.strptime(date_from, "%Y-%m-%d")
+        query = query.filter(models.Booking.start_time >= from_date)
+    
+    if date_to:
+        to_date = datetime.strptime(date_to, "%Y-%m-%d")
+        # Add 1 day to include the entire end date
+        to_date = to_date + timedelta(days=1)
+        query = query.filter(models.Booking.start_time < to_date)
+    
+    bookings = query.order_by(models.Booking.start_time.desc()).all()
+    
+    # Enrich with price_amount from the price_snapshot relationship
+    result = []
+    for b in bookings:
+        # Create a dict-like object with price_amount
+        booking_dict = {
+            "booking_id": b.booking_id,
+            "court_id": b.court_id,
+            "start_time": b.start_time,
+            "is_cancelled": b.is_cancelled,
+            "price_amount": b.price_snapshot.amount if b.price_snapshot else None
+        }
+        result.append(booking_dict)
+    return result
 
 def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: int):
     # Parse input strings to datetime
@@ -92,21 +119,37 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     if existing:
         return None # Conflict
 
-    # Find active price (simplified for now, assume ID 1 exists)
-    # Ideally should query the Schedule to find the PriceID for this slot
-    # For MVP initialization we will need to create a dummy price.
+    # Find price from Schedule based on day of week and time
+    day_of_week = start_dt.weekday()
+    time_obj = start_dt.time()
+    
+    schedule = db.query(models.Schedule).filter(
+        models.Schedule.day_of_week == day_of_week,
+        models.Schedule.start_time == time_obj
+    ).first()
+    
+    # Use schedule's price_id if found, otherwise fallback to 1
+    price_id = schedule.price_id if schedule and schedule.price_id else 1
     
     new_booking = models.Booking(
         user_id=user_id,
         court_id=booking_data.court_id,
         start_time=start_dt,
-        price_id=1, # Default price ID fallback
+        price_id=price_id,
         is_cancelled=False
     )
     db.add(new_booking)
     db.commit()
     db.refresh(new_booking)
-    return new_booking
+    
+    # Return with price_amount for response
+    return {
+        "booking_id": new_booking.booking_id,
+        "court_id": new_booking.court_id,
+        "start_time": new_booking.start_time,
+        "is_cancelled": new_booking.is_cancelled,
+        "price_amount": new_booking.price_snapshot.amount if new_booking.price_snapshot else None
+    }
 
 def cancel_booking_logic(db: Session, booking_id: int, user_id: int):
     booking = db.query(models.Booking).filter(models.Booking.booking_id == booking_id, models.Booking.user_id == user_id).first()
