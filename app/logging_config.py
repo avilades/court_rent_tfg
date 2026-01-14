@@ -54,4 +54,4 @@ def setup_logging():
         force=True # Forzamos la configuración si ya existía una previa
     )
     
-    logging.info("Sistema de logs inicializado. Los archivos se guardarán en la carpeta 'logs'.")
+    logging.info(f"Sistema de logs inicializado. Los archivos se guardarán en la carpeta:  {log_base}")

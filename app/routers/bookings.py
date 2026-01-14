@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+import logging
 from sqlalchemy.orm import Session
 from typing import List
 from .. import crud, schemas, models
@@ -21,6 +22,9 @@ def read_my_bookings(
     Recupera todas las reservas del usuario autenticado.
     Opcional: filtrar por rango de fechas (date_from, date_to en formato YYYY-MM-DD).
     """
+    
+    logging.info(f"Busqueda de reservas para el usuario {current_user.email} con fechas {date_from} - {date_to}")   
+    
     return crud.get_user_bookings(db, user_id=current_user.user_id, date_from=date_from, date_to=date_to)
 
 @router.post("/book", response_model=schemas.BookingResponse)
@@ -37,6 +41,8 @@ def book_court(booking: schemas.BookingCreate, current_user: models.User = Depen
     new_booking = crud.create_booking(db, booking, user_id=current_user.user_id)
     if not new_booking:
          raise HTTPException(status_code=409, detail="El horario seleccionado ya está ocupado")
+    
+    logging.info(f"Reserva creada: Usuario={current_user.email}, Pista={new_booking['court_id']}, Fecha={new_booking['start_time'].date()}, Hora={new_booking['start_time'].strftime('%H:%M')}")
     
     return new_booking
 
@@ -112,7 +118,9 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
                     is_available=True,
                     price_amount=price_amount
                 ))
-                
+    
+    logging.info(f"Busqueda de disponibilidad para el dia {date}")
+    
     return available_slots
 
 @router.post("/cancel/{booking_id}")
@@ -124,6 +132,8 @@ def cancel_booking(booking_id: int, current_user: models.User = Depends(get_curr
     booking = crud.cancel_booking_logic(db, booking_id, current_user.user_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Reserva no encontrada o no estás autorizado")
+    
+    logging.info(f"Reserva cancelada: ID={booking_id}, Usuario={current_user.email}")
     
     return {"msg": "Reserva cancelada correctamente"}
 

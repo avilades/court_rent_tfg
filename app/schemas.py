@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, time
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --- Esquemas Pydantic ---
 # Los esquemas se utilizan para la validación de datos y la serialización (conversión a JSON).
@@ -17,6 +20,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Datos necesarios para crear un nuevo usuario (incluye contraseña)."""
     password: str
+
+    logger.info("UserCreate: %s", UserBase)
 
 class UserResponse(UserBase):
     """Datos de usuario que devolvemos en las respuestas de la API."""
@@ -39,9 +44,13 @@ class PermissionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+    logger.info("PermissionResponse: %s", BaseModel)
+
 class UserWithPermissions(UserResponse):
     """Extensión de UserResponse que incluye la información de sus permisos."""
     permissions: Optional[PermissionResponse] = None
+
+    logger.info("UserWithPermissions: %s", UserResponse)
 
 # --- Esquemas de Tokens (Autenticación JWT) ---
 
@@ -50,14 +59,20 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+    logger.info("Token: %s", BaseModel)
+
 class TokenData(BaseModel):
     """Datos contenidos dentro del payload del token (ej. email)."""
     email: Optional[str] = None
+
+    logger.info("TokenData: %s", BaseModel)
 
 class UserLogin(BaseModel):
     """Estructura esperada para el formulario de inicio de sesión."""
     email: str
     password: str
+
+    logger.info("UserLogin: %s", BaseModel)
 
 # --- Esquemas de Pistas ---
 
@@ -69,6 +84,8 @@ class CourtResponse(BaseModel):
     class Config:
         from_attributes = True
 
+    logger.info("CourtResponse: %s", BaseModel)
+
 # --- Esquemas de Disponibilidad y Horarios ---
 
 class SlotBase(BaseModel):
@@ -77,7 +94,9 @@ class SlotBase(BaseModel):
     start_time: datetime # Marca de tiempo completa ISO
     end_time: datetime
     is_available: bool
-    price_amount: Optional[int] = None  # Precio aplicable para este slot
+    price_amount: Optional[float] = None  # Precio aplicable para este slot
+
+    logger.info("SlotBase: %s", BaseModel)
 
 # --- Esquemas de Reservas ---
 
@@ -87,13 +106,17 @@ class BookingCreate(BaseModel):
     date: str       # Formato "YYYY-MM-DD"
     time_slot: str  # Formato "HH:MM" (hora de inicio)
 
+    logger.info("BookingCreate: %s", BaseModel)
+
 class BookingResponse(BaseModel):
     """Información que se devuelve tras consultar o realizar una reserva."""
     booking_id: int
     court_id: int
     start_time: datetime
     is_cancelled: bool
-    price_amount: Optional[int] = None # Campo calculado/enriquecido con el precio pagado
+    price_amount: Optional[float] = None # Campo calculado/enriquecido con el precio pagado
 
     class Config:
         from_attributes = True
+
+    logger.info("BookingResponse: %s", BaseModel)

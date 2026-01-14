@@ -58,7 +58,7 @@ class Court(Base):
 
 class Demand(Base):
     """
-    Define los niveles de demanda (Ej: Alta, Media, Baja).
+    Define los niveles de demanda (Alta, Media, Baja).
     Sirve como puente para asignar precios dinámicos según el horario.
     """
     __tablename__ = "demands"
@@ -75,11 +75,11 @@ class Price(Base):
     __tablename__ = "prices"
 
     price_id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float, nullable=False)           # Importe de la tarifa
+    amount = Column(Float, nullable=False)                 # Importe de la tarifa
     start_date = Column(DateTime, default=datetime.utcnow) # Fecha de entrada en vigor
-    end_date = Column(DateTime, nullable=True)       # Fecha de fin (nulo si es la vigente)
+    end_date = Column(DateTime, nullable=True)             # Fecha de fin (nulo si es la vigente)
     description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)        # ¿Es la tarifa actual activa?
+    is_active = Column(Boolean, default=True)              # ¿Es la tarifa actual activa?
     demand_id = Column(Integer, ForeignKey("demands.demand_id"), nullable=False)
 
     # Relaciones
@@ -124,9 +124,9 @@ class Booking(Base):
     # Vinculamos al price_id específico en el MOMENTO de la reserva para preservar el histórico
     price_id = Column(Integer, ForeignKey("prices.price_id")) 
     
-    start_time = Column(DateTime, nullable=False)      # Fecha y hora exacta del alquiler
+    start_time = Column(DateTime, nullable=False)          # Fecha y hora exacta del alquiler
     created_at = Column(DateTime, default=datetime.utcnow) # Cuándo se realizó la reserva
-    is_cancelled = Column(Boolean, default=False)      # Flag de cancelación
+    is_cancelled = Column(Boolean, default=False)          # Flag de cancelación
     
     # Relaciones para navegar entre modelos
     user = relationship("User", back_populates="bookings")

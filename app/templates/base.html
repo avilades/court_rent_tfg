@@ -14,7 +14,7 @@
         <nav id="nav-links">
             <!-- Dynamic Navigation populated by JS based on auth state -->
             <a href="/dashboard">Panel</a>
-            <a href="#" onclick="logout()">Cerrar Sesión</a>
+            <a href="/" onclick="return logout(event)">Cerrar Sesión</a>
         </nav>
     </header>
 
@@ -23,9 +23,13 @@
     </div>
 
     <script>
-        function logout() {
+        function logout(e) {
+            if (e) e.preventDefault();
+            console.log("Cerrando sesión y redirigiendo...");
             localStorage.removeItem('token');
-            window.location.href = '/';
+            // Redirigir explícitamente a la raíz del sitio
+            window.location.href = window.location.origin + '/';
+            return false;
         }
 
         // Simple auth check to toggle nav items

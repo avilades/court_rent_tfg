@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -43,7 +44,9 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado")
     
-    return crud.create_user(db=db, user=user)
+    new_user = crud.create_user(db=db, user=user)
+    logging.info(f"Nuevo usuario registrado: {new_user.email}")
+    return new_user
 
 @router.post("/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
@@ -67,5 +70,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
+    
+    logging.info(f"Inicio de sesión exitoso: {user.email}")
     
     return {"access_token": access_token, "token_type": "bearer"}
