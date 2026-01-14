@@ -3,113 +3,108 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
-# --- Models Definition ---
-# These classes represent our database tables (Object Relational Mapping - ORM).
-# Each class inherits from 'Base', linking it to our SQLAlchemy configuration.
+# --- Definición de Modelos (ORM) ---
+# Estas clases representan nuestras tablas de base de datos.
+# Cada clase hereda de 'Base', vinculándola a la configuración de SQLAlchemy.
 
 class User(Base):
     """
-    Represents a registered user in the system.
-    Relevant requirements: "Users must be registered... Users table"
+    Representa a un usuario registrado en el sistema.
+    Almacena información básica y credenciales (hash de contraseña).
     """
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    surname = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    name = Column(String, nullable=False)        # Nombre del usuario
+    surname = Column(String, nullable=False)     # Apellidos
+    email = Column(String, unique=True, index=True, nullable=False) # Email único (usado para login)
+    password_hash = Column(String, nullable=False) # Hash seguro de la contraseña
 
-    # Relationships
-    # One-to-One relationship with Permissions
+    # Relaciones
+    # Relación One-to-One con Permissions (un usuario tiene un set de permisos)
     permissions = relationship("Permission", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    # One-to-Many relationship with Bookings
+    # Relación One-to-Many con Bookings (un usuario puede tener muchas reservas)
     bookings = relationship("Booking", back_populates="user")
 
 class Permission(Base):
     """
-    Stores specific permissions for each user.
-    Relevant requirements: "Permissions table, rent=1 by default..."
+    Almacena los permisos específicos de cada usuario.
+    Controla quién puede alquilar, editar horarios o cambiar precios.
     """
     __tablename__ = "permissions"
 
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
     
-    # Using Boolean for 'bit' as requested (SQLAlchemy maps this correctly to Postgres)
-    is_admin = Column(Boolean, default=False)        # 'Admin'
-    can_rent = Column(Boolean, default=True)         # 'Rent' (Default 1)
-    can_edit_schedule = Column(Boolean, default=False) # 'Schedule' (Default 0)
-    can_edit_price = Column(Boolean, default=False)    # 'Price' (Default 0)
+    is_admin = Column(Boolean, default=False)          # ¿Es administrador global?
+    can_rent = Column(Boolean, default=True)           # ¿Puede realizar alquileres? (Por defecto SI)
+    can_edit_schedule = Column(Boolean, default=False) # ¿Puede modificar el cuadrante horario?
+    can_edit_price = Column(Boolean, default=False)    # ¿Puede modificar las tarifas?
 
-    # Relationship back to User
+    # Relación inversa hacia el Usuario
     user = relationship("User", back_populates="permissions")
 
 class Court(Base):
     """
-    Represents a sport court.
-    Relevant requirements: "8 courts numbered 1 to 8... Courts table"
+    Representa una pista deportiva (tenis/pádel).
+    Existen 8 pistas fijas, numeradas del 1 al 8.
     """
     __tablename__ = "courts"
 
-    court_id = Column(Integer, primary_key=True, index=True) # 1-8
-    is_covered = Column(Boolean, default=False) # 'Cover'
+    court_id = Column(Integer, primary_key=True, index=True) # ID identificador (1-8)
+    is_covered = Column(Boolean, default=False)             # ¿Es pista cubierta?
 
+    # Relación con las reservas de esta pista
     bookings = relationship("Booking", back_populates="court")
 
 class Demand(Base):
     """
-    Store relation between price and demand
+    Define los niveles de demanda (Ej: Alta, Media, Baja).
+    Sirve como puente para asignar precios dinámicos según el horario.
     """
     __tablename__ = "demands"
 
     demand_id = Column(Integer, primary_key=True, index=True)
-    description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
-
+    description = Column(String, nullable=True) # Descripción del nivel de demanda
+    is_active = Column(Boolean, default=True)   # Estado del nivel
 
 class Price(Base):
     """
-    Historical record of prices.
-    Relevant requirements: "Price table... historical storage"
+    Registro histórico de precios asociados a un nivel de demanda.
+    Permite mantener un histórico de cuánto costaba una pista en una fecha determinada.
     """
     __tablename__ = "prices"
 
     price_id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float, nullable=False) # 'Priceo' (Assuming cents or whole currency unit)
-    start_date = Column(DateTime, default=datetime.utcnow)
-    end_date = Column(DateTime, nullable=True) # Open-ended by default until replaced
+    amount = Column(Float, nullable=False)           # Importe de la tarifa
+    start_date = Column(DateTime, default=datetime.utcnow) # Fecha de entrada en vigor
+    end_date = Column(DateTime, nullable=True)       # Fecha de fin (nulo si es la vigente)
     description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)        # ¿Es la tarifa actual activa?
     demand_id = Column(Integer, ForeignKey("demands.demand_id"), nullable=False)
 
-    # Relationship to historical bookings, schedules and demand
+    # Relaciones
     bookings = relationship("Booking", back_populates="price_snapshot")
     demand = relationship("Demand")
 
 class Schedule(Base):
     """
-    Defines availability slots for the week.
-    Relevant requirements: "Schedules table... fixed slots"
+    Define los slots de disponibilidad semanal (cuadrante horario).
+    Relaciona un día y hora específicos con un nivel de demanda.
     """
     __tablename__ = "schedules"
 
     schedule_id = Column(Integer, primary_key=True, index=True)
-    day_of_week = Column(Integer, nullable=False) # 0=Monday, 6=Sunday
-    is_weekend = Column(Boolean, default=False)
-    start_time = Column(Time, nullable=False) # e.g., 08:00:00
+    day_of_week = Column(Integer, nullable=False) # 0=Lunes, 6=Domingo
+    is_weekend = Column(Boolean, default=False)   # Flag para fin de semana
+    start_time = Column(Time, nullable=False)     # Hora de inicio del bloque (ej, 08:30)
     demand_id = Column(Integer, ForeignKey("demands.demand_id"), nullable=False)
     
-    # Relationship to demand
+    # Relación con el nivel de demanda asociado al horario
     demand = relationship("Demand")
-    
-    # Current active price for this slot
-    #price_id = Column(Integer, ForeignKey("prices.price_id"))
-    
 
 class Holiday(Base):
     """
-    Specific exception dates.
-    Relevant requirements: "Holidays table"
+    Almacena fechas especiales (festivos) donde el horario podría variar.
     """
     __tablename__ = "holidays"
 
@@ -117,8 +112,8 @@ class Holiday(Base):
 
 class Booking(Base):
     """
-    Represents a reservation.
-    Relevant requirements: "Historico... UserID, CourtID, PriceID..."
+    Representa una reserva realizada por un usuario.
+    Guarda una captura (snapshot) del precio en el momento exacto del alquiler.
     """
     __tablename__ = "bookings"
 
@@ -126,14 +121,14 @@ class Booking(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"))
     court_id = Column(Integer, ForeignKey("courts.court_id"))
     
-    # We link to the specific Price ID active AT THE MOMENT of booking to preserve history
+    # Vinculamos al price_id específico en el MOMENTO de la reserva para preservar el histórico
     price_id = Column(Integer, ForeignKey("prices.price_id")) 
     
-    start_time = Column(DateTime, nullable=False) # 'HoraAlquiler' - Full timestamp
-    created_at = Column(DateTime, default=datetime.utcnow) # 'Reservada'
-    is_cancelled = Column(Boolean, default=False) # 'Cancelada'
-
-    # Relationships
+    start_time = Column(DateTime, nullable=False)      # Fecha y hora exacta del alquiler
+    created_at = Column(DateTime, default=datetime.utcnow) # Cuándo se realizó la reserva
+    is_cancelled = Column(Boolean, default=False)      # Flag de cancelación
+    
+    # Relaciones para navegar entre modelos
     user = relationship("User", back_populates="bookings")
     court = relationship("Court", back_populates="bookings")
     price_snapshot = relationship("Price", back_populates="bookings")

@@ -5,17 +5,20 @@ from datetime import datetime
 
 def setup_logging():
     """
-    Configures daily rotating file logging.
-    Logs are stored in the 'logs' directory with the format court_reservation_YYYYMMDD.log
+    Configura el registro de logs con rotación diaria.
+    Los logs se almacenan en el directorio 'logs' con el formato court_reservation_YYYYMMDD.log
     """
     log_dir = "logs"
+    # Aseguramos que la carpeta de logs exista
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    # Base filename for the logger
+    # Nombre base del archivo de log
     log_base = os.path.join(log_dir, "court_reservation.log")
 
-    # TimedRotatingFileHandler: rotates every midnight
+    # TimedRotatingFileHandler: rota el archivo automáticamente.
+    # 'midnight': rota a la medianoche.
+    # backupCount=30: mantenemos los logs de los últimos 30 días.
     handler = TimedRotatingFileHandler(
         log_base,
         when="midnight",
@@ -24,13 +27,16 @@ def setup_logging():
         encoding="utf-8"
     )
 
-    # Custom suffix for the rotated files (will be appended with a dot by the handler)
+    # Sufijo personalizado para los archivos rotados (YYYYMMDD)
     handler.suffix = "%Y%m%d"
 
-    # Custom namer to ensure the format is exactly court_reservation_YYYYMMDD.log
+    # Función personalizada para renombrar los archivos rotados
     def namer(default_name):
-        # default_name is usually "logs/court_reservation.log.20260113"
-        # We want "logs/court_reservation_20260113.log"
+        """
+        Cambia el formato por defecto de SQLAlchemy/Python (archivo.log.fecha)
+        a un formato más estándar (archivo_fecha.log).
+        """
+        # default_name suele ser algo como "logs/court_reservation.log.20260113"
         if ".log." in default_name:
             parts = default_name.split(".log.")
             return f"{parts[0]}_{parts[1]}.log"
@@ -38,14 +44,14 @@ def setup_logging():
 
     handler.namer = namer
 
-    # Configure the root logger
+    # Configuración global del logger raíz
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.INFO, # Nivel mínimo de severidad a registrar
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             handler
         ],
-        force=True
+        force=True # Forzamos la configuración si ya existía una previa
     )
     
-    logging.info("Logging initialized. Logs will be saved to the 'logs' directory.")
+    logging.info("Sistema de logs inicializado. Los archivos se guardarán en la carpeta 'logs'.")

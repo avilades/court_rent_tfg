@@ -3,30 +3,49 @@ from datetime import time
 from . import models, schemas, crud
 import logging
 
+# Configuración del logger para este módulo
 logger = logging.getLogger(__name__)
-# --- Admin user Operattions ---
+
+# --- Operaciones de Inicialización del Administrador ---
 
 def initialize_admin_user(db: Session):
-    """Creates admin user if it dosen't exist."""
+    """
+    Crea el usuario administrador por defecto si no existe en la base de datos.
+    También se asegura de que tenga los permisos necesarios.
+    """
+    # 1. Comprobar si el usuario 'admin' existe
     if db.query(models.User).filter(models.User.name == "admin").count() == 0:
-        crud.create_user(db, schemas.UserCreate(name="admin", surname="admin", email="admin@example.com", password="admin000"))
-        logger.info("Admin user created.")
+        # Si no existe, lo creamos con una contraseña por defecto
+        crud.create_user(db, schemas.UserCreate(
+            name="admin", 
+            surname="admin", 
+            email="admin@example.com", 
+            password="admin000"
+        ))
+        logger.info("Usuario administrador creado.")
     else:
-        logger.info("Admin user already exists.")
-    """check admin permission"""
-    if db.query(models.User).join(models.Permission).filter(
-             models.User.name == "admin"
-            ,models.Permission.is_admin == True
-            ,models.Permission.can_edit_schedule == True
-            ,models.Permission.can_edit_price == True
-        ).count() == 0:
-        """update admin permission"""
-        update_admin_user_permission(db, db.query(models.User).filter(models.User.name == "admin").first().user_id)
-    else:
-        logger.info("Admin permission already exists.")
+        logger.info("El usuario administrador ya existe.")
+
+    # 2. Verificar y actualizar permisos de administrador
+    # Nos aseguramos de que el usuario 'admin' tenga permisos de admin y de edición.
+    admin_user = db.query(models.User).filter(models.User.name == "admin").first()
+    if admin_user:
+        has_full_permissions = db.query(models.Permission).filter(
+            models.Permission.user_id == admin_user.user_id,
+            models.Permission.is_admin == True,
+            models.Permission.can_edit_schedule == True,
+            models.Permission.can_edit_price == True
+        ).count() > 0
+
+        if not has_full_permissions:
+            update_admin_user_permission(db, admin_user.user_id)
+        else:
+            logger.info("Los permisos de administrador ya son correctos.")
 
 def update_admin_user_permission(db: Session, user_id: int):
-    """update admin permission"""
+    """
+    Actualiza la tabla de permisos para otorgar privilegios totales a un usuario.
+    """
     db.query(models.Permission).filter(
         models.Permission.user_id == user_id
     ).update({
@@ -35,18 +54,21 @@ def update_admin_user_permission(db: Session, user_id: int):
         models.Permission.can_edit_price: True
     })
     db.commit() 
-    logger.info("Admin permission updated.")
+    logger.info("Permisos de administrador actualizados.")
+
+# --- Inicialización de Datos Maestros ---
 
 def initialize_demands(db: Session):
-    """Creates default demands if they don't exist."""
-    # Define all required demands
+    """
+    Crea los tipos de demanda (Alta, Media, Baja) si no existen.
+    Esto es crucial para el sistema dinámico de precios.
+    """
     required_demands = [
         {"description": "Demanda alta", "is_active": True},
         {"description": "Demanda media", "is_active": True},
         {"description": "Demanda baja", "is_active": True}
     ]
     
-    # Check and create each demand if it doesn't exist
     for demand_data in required_demands:
         existing_demand = db.query(models.Demand).filter(
             models.Demand.description == demand_data["description"]
@@ -56,21 +78,22 @@ def initialize_demands(db: Session):
             new_demand = models.Demand(**demand_data)
             db.add(new_demand)
     
-    # Commit all new demands at once
     db.commit()
-    logger.info("Demands initialized.")
+    logger.info("Tipos de demanda inicializados.")
 
 def initialize_prices(db: Session):
-    """Creates default prices if they don't exist."""
-    # Define all required prices
+    """
+    Establece los precios base para cada tipo de demanda si no están definidos.
+    Precios: Alta -> 30€, Media -> 20€, Baja -> 10€.
+    """
     required_prices = [
         {"amount": 30, "description": "Precio de pista", "is_active": True, "demand_id": 1},
         {"amount": 20, "description": "Precio de pista", "is_active": True, "demand_id": 2},
         {"amount": 10, "description": "Precio de pista", "is_active": True, "demand_id": 3}
     ]
     
-    # Check and create each price if it doesn't exist
     for price_data in required_prices:
+        # Verificamos si ya existe un precio para esa demanda
         existing_price = db.query(models.Price).filter(
             models.Price.demand_id == price_data["demand_id"]
         ).first()
@@ -79,46 +102,43 @@ def initialize_prices(db: Session):
             new_price = models.Price(**price_data)
             db.add(new_price)
     
-    # Commit all new prices at once
     db.commit()
-    logger.info("Prices initialized.")
+    logger.info("Precios inicializados.")
+
 def initialize_courts(db: Session):
-    """Creates the 8 courts if they don't exist."""
+    """
+    Crea las 8 pistas de la instalación.
+    Asumimos que las pistas 5 a 8 son cubiertas (is_covered=True).
+    """
     if db.query(models.Court).count() == 0:
         for i in range(1, 9):
-            court = models.Court(court_id=i, is_covered=(i > 4)) # Example: 5-8 covered
+            # i > 4 significa que pistas 5, 6, 7 y 8 están cubiertas
+            court = models.Court(court_id=i, is_covered=(i > 4)) 
             db.add(court)
         db.commit()
-    logger.info("Courts initialized.")     
+    logger.info("Pistas inicializadas.")     
+
 def initialize_schedules(db: Session):
-    """Creates all schedule entries if they don't exist."""
+    """
+    Configura el horario semanal completo con los bloques de 90 minutos y su demanda asociada.
+    """
+    # Si ya hay horarios, no re-inicializamos
     if db.query(models.Schedule).count() > 0:
-        return  # Already initialized
+        return
     
-    # Time slots for each day
+    # Definición de los bloques horarios de 90 minutos
     time_slots = [
-        time(8, 0),   # 08:00
-        time(9, 30),  # 09:30
-        time(11, 0),  # 11:00
-        time(12, 30), # 12:30
-        time(14, 0),  # 14:00
-        time(15, 30), # 15:30
-        time(17, 0),  # 17:00
-        time(18, 30), # 18:30
-        time(20, 0),  # 20:00
-        time(21, 30), # 21:30
+        time(8, 0), time(9, 30), time(11, 0), time(12, 30),
+        time(14, 0), time(15, 30), time(17, 0), time(18, 30),
+        time(20, 0), time(21, 30)
     ]
     
-    # Days 0-4: Monday to Friday (weekdays)
-    # For weekdays: morning/afternoon (08:00-15:30) use price_id=3, evening (17:00-21:30) use price_id=1
-    for day in range(5):  # Monday (0) to Friday (4)
+    # Lógica para Días de Diario (Lunes a Viernes, 0-4)
+    # Mañanas/Tardes (antes de las 17:00): Demanda Baja (ID 3)
+    # Noches (a partir de las 17:00): Demanda Alta (ID 1)
+    for day in range(5):
         for slot in time_slots:
-            # Determine price based on time
-            if slot < time(17, 0):
-                demand_id = 3  # Morning/afternoon demand
-            else:
-                demand_id = 1  # Evening demand
-            
+            demand_id = 3 if slot < time(17, 0) else 1
             schedule = models.Schedule(
                 day_of_week=day,
                 is_weekend=False,
@@ -127,7 +147,7 @@ def initialize_schedules(db: Session):
             )
             db.add(schedule)
     
-    # Saturday (day_of_week = 5) - All slots use demand_id=1
+    # Sábado (Día 5): Todo el día Demanda Alta (ID 1)
     for slot in time_slots:
         schedule = models.Schedule(
             day_of_week=5,
@@ -137,13 +157,11 @@ def initialize_schedules(db: Session):
         )
         db.add(schedule)
     
-    # Sunday (day_of_week = 6) - Morning/afternoon use demand_id=1, evening uses demand_id=3
+    # Domingo (Día 6): 
+    # Mañana hasta 17:00: Demanda Alta (ID 1)
+    # Noche post 17:00: Demanda Baja (ID 3)
     for slot in time_slots:
-        if slot < time(17, 0):
-            demand_id = 1
-        else:
-            demand_id = 3
-        
+        demand_id = 1 if slot < time(17, 0) else 3
         schedule = models.Schedule(
             day_of_week=6,
             is_weekend=True,
@@ -153,3 +171,5 @@ def initialize_schedules(db: Session):
         db.add(schedule)
     
     db.commit()
+    logger.info("Horarios semanales inicializados.")
+
