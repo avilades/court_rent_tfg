@@ -26,10 +26,37 @@
 </div>
 
 <script>
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = '/';
+    async function checkAdmin() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
 
-    // In a full implementation, we would check permissions here
-    // and redirect if !can_edit_schedule && !can_edit_price
+        try {
+            const response = await fetch('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                if (!user.permissions || !user.permissions.is_admin) {
+                    console.warn("Acceso denegado: No eres administrador.");
+                    window.location.href = '/dashboard';
+                }
+            } else {
+                console.error("Error al validar token");
+                localStorage.removeItem('token');
+                window.location.href = '/';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            window.location.href = '/dashboard';
+        }
+    }
+
+    checkAdmin();
 </script>
 {% endblock %}

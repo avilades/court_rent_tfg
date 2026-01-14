@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from .. import crud, schemas, dependencies, database
+from .. import crud, schemas, dependencies, database, models
 from ..dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from jose import jwt
 
@@ -74,3 +74,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     logging.info(f"Inicio de sesión exitoso: {user.email}")
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=schemas.UserWithPermissions)
+def get_me(current_user: models.User = Depends(dependencies.get_current_user)):
+    """
+    Endpoint para obtener la información del usuario actualmente autenticado,
+    incluyendo sus permisos.
+    """
+    return current_user

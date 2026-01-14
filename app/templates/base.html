@@ -13,8 +13,6 @@
         <h1>🎾 Reserva de Pista</h1>
         <nav id="nav-links">
             <!-- Dynamic Navigation populated by JS based on auth state -->
-            <a href="/dashboard">Panel</a>
-            <a href="/" onclick="return logout(event)">Cerrar Sesión</a>
         </nav>
     </header>
 
@@ -23,21 +21,54 @@
     </div>
 
     <script>
+        async function updateNav() {
+            const token = localStorage.getItem('token');
+            const nav = document.getElementById('nav-links');
+
+            if (!token) {
+                nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    let navHtml = '';
+
+                    if (user.permissions && user.permissions.is_admin) {
+                        navHtml += '<a href="/admin">Admin</a> ';
+                    }
+
+                    navHtml += '<a href="/dashboard">Panel</a> ';
+                    navHtml += '<a href="/" onclick="return logout(event)">Cerrar Sesión</a>';
+
+                    nav.innerHTML = navHtml;
+                } else if (response.status === 401) {
+                    // Token expired or invalid
+                    localStorage.removeItem('token');
+                    nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                nav.innerHTML = '<a href="/dashboard">Panel</a> <a href="/" onclick="return logout(event)">Cerrar Sesión</a>';
+            }
+        }
+
         function logout(e) {
             if (e) e.preventDefault();
-            console.log("Cerrando sesión y redirigiendo...");
             localStorage.removeItem('token');
-            // Redirigir explícitamente a la raíz del sitio
-            window.location.href = window.location.origin + '/';
+            window.location.href = '/';
             return false;
         }
 
-        // Simple auth check to toggle nav items
-        const token = localStorage.getItem('token');
-        const nav = document.getElementById('nav-links');
-        if (!token) {
-            nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
-        }
+        // Initialize nav
+        updateNav();
     </script>
 </body>
 
