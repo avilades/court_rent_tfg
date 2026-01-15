@@ -98,7 +98,7 @@ Todas las funciones administrativas se han consolidado en el router dedicado `ap
 - **Funcionalidad**: Sirve como hub central para acceder a estadísticas, gestión de precios, histórico de reservas y mantenimiento de pistas.
 
 ### B. Gestión de Tarifas (Precios)
-- **Frontend**: `app/templates/precio.html`.
+- **Frontend**: `app/templates/admin_precio.html`.
     - **Ruta**: `GET /admin/precio`
 - **Lógica Backend** (`app/routers/admin.py`):
     1.  **Consulta**: `GET /admin/prices` recupera los precios vigentes para mostrarlos en el formulario.

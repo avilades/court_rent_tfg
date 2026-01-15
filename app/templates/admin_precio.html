@@ -2,8 +2,14 @@
 
 {% block content %}
 <div class="card" style="max-width: 800px; margin: 0 auto;">
-    <h2>Gestión de Precios</h2>
-    <p>Selecciona un precio para modificarlo. Se creará una nueva versión con la fecha de inicio indicada.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin: 0;">Gestión de Precios</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Selecciona un precio para modificarlo. Se creará una nueva
+                versión con la fecha de inicio indicada.</p>
+        </div>
+        <a href="/admin" class="back-link">← Volver al Admin</a>
+    </div>
 
     <div id="loading" class="text-center" style="padding: 2rem;">Cargando precios...</div>
 

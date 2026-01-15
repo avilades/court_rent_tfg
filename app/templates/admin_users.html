@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin: 0;">Gestión de Usuarios</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Administra las cuentas y restablece contraseñas de forma segura.
+            </p>
+        </div>
+        <a href="/admin" class="back-link">← Volver al Admin</a>
+    </div>
+
+
+
+    <div class="users-card">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+                <!-- Se cargará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Reseteo -->
+<div id="reset-modal" class="modal">
+    <div class="modal-content">
+        <h3>Restablecer Contraseña</h3>
+        <p id="reset-user-info"></p>
+        <div class="form-group">
+            <label for="new-password">Nueva Contraseña</label>
+            <input type="password" id="new-password" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button class="btn-primary" id="confirm-reset-btn">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .header-section {
+        margin-bottom: 2rem;
+    }
+
+    .back-link {
+        text-decoration: none;
+        color: #007bff;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+    .subtitle {
+        color: #666;
+    }
+
+    .users-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #eee;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .users-table th {
+        background: #f8f9fa;
+        padding: 1.2rem 1.5rem;
+        font-weight: 600;
+        color: #444;
+        border-bottom: 2px solid #eee;
+    }
+
+    .users-table td {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid #eee;
+        color: #555;
+    }
+
+    .users-table tr:hover {
+        background: #fcfcfc;
+    }
+
+    .btn-reset {
+        background: #fff;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .btn-reset:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    /* Modales */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 2.5rem;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-group {
+        margin: 1.5rem 0;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    let currentUserId = null;
+
+    async function checkAdmin() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                if (!user.permissions || !user.permissions.is_admin) {
+                    window.location.href = '/dashboard';
+                } else {
+                    loadUsers();
+                }
+            } else {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+            }
+        } catch (error) {
+            window.location.href = '/dashboard';
+        }
+    }
+
+    async function loadUsers() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/admin/users-list', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const users = await res.json();
+                renderUsers(users);
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    function renderUsers(users) {
+        const container = document.getElementById('users-list');
+        container.innerHTML = '';
+        users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${u.user_id}</td>
+                <td><strong>${u.name} ${u.surname}</strong></td>
+                <td>${u.email}</td>
+                <td>
+                    <button class="btn-reset" onclick="openResetModal(${u.user_id}, '${u.email}')">
+                        Restablecer Password
+                    </button>
+                </td>
+            `;
+            container.appendChild(tr);
+        });
+    }
+
+    function openResetModal(id, email) {
+        currentUserId = id;
+        document.getElementById('reset-user-info').innerText = `Estás cambiando la contraseña de: ${email}`;
+        document.getElementById('new-password').value = '';
+        document.getElementById('reset-modal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('reset-modal').style.display = 'none';
+        currentUserId = null;
+    }
+
+    document.getElementById('confirm-reset-btn').addEventListener('click', async () => {
+        const password = document.getElementById('new-password').value;
+        if (!password || password.length < 4) {
+            alert('La contraseña debe tener al menos 4 caracteres (para fines de prueba).');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/admin/users/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: currentUserId,
+                    new_password: password
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.msg);
+                closeModal();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.detail);
+            }
+        } catch (err) {
+            alert('Error de conexión al servidor');
+        }
+    });
+
+    checkAdmin();
+</script>
+{% endblock %}

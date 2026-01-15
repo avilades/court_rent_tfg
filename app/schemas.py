@@ -129,3 +129,8 @@ class PriceUpdate(BaseModel):
     amount: float
     start_date: datetime # Fecha de inicio del nuevo precio
 
+class UserPasswordReset(BaseModel):
+    """Esquema para el reseteo de contraseña por un administrador."""
+    user_id: int
+    new_password: str
+

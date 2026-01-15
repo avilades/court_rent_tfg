@@ -203,3 +203,24 @@ def cancel_booking_logic(db: Session, booking_id: int, user_id: int):
         db.commit()
     
     return booking
+
+def get_all_users(db: Session):
+    """
+    Recupera todos los usuarios registrados.
+    """
+    return db.query(models.User).all()
+
+def update_user_password(db: Session, user_id: int, new_password: str):
+    """
+    Actualiza la contraseña de un usuario.
+    :param db: Sesión de la base de datos.
+    :param user_id: ID del usuario.
+    :param new_password: Nueva contraseña en texto plano.
+    :return: Objeto User actualizado o None if not found.
+    """
+    db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if db_user:
+        db_user.password_hash = get_password_hash(new_password)
+        db.commit()
+        db.refresh(db_user)
+    return db_user

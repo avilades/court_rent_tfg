@@ -12,7 +12,7 @@ El proyecto está organizado de la siguiente manera:
     - `templates/`: Plantillas HTML para el frontend.
 - `logs/`: Directorio donde se almacenan los archivos de log.
 - `requirements.txt`: Dependencias del proyecto.
-- `reset_db.py`: Script para resetear la base de datos.
+- `tests/reset_db.py`: Script para resetear la base de datos.
 
 ---
 
@@ -144,5 +144,5 @@ Router reservado para futuras implementaciones de gestión de perfiles de usuari
 
 ## Otros Archivos
 
-### `reset_db.py`
+### `tests/reset_db.py`
 Script independiente para limpiar y recrear la estructura de la base de datos desde la línea de comandos.

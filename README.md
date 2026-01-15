@@ -60,7 +60,7 @@ El código está organizado siguiendo las mejores prácticas de FastAPI:
 *   `app/main.py`: Punto de entrada y configuración.
 *   `app/models.py`: Definición de las tablas (SQLAlchemy).
 *   `app/routers/`: Módulos de la API (`auth`, `bookings`, `admin`).
-*   `app/crud.py`: Operaciones de base de datos.
+*   `tests/`: Scripst de utilidad y pruebas.
 *   `app/templates.py`: Configuración centralizada de Jinja2.
 
 ## Documentación Detallada

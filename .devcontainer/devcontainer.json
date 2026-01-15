@@ -9,8 +9,8 @@
     ],
     "workspaceFolder": "/workspace",
     "features": {
-        "ghcr.io/devcontainers/features/python:1": {
-            "version": "3.10"
+        "ghcr.io/devcontainers/features/python:1.8.0": {
+            "version": "3.14"
         }
     },
     "customizations": {

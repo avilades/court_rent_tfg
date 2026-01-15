@@ -29,7 +29,7 @@ async def admin_stats_page(request: Request):
 async def price_page(request: Request):
     """Vista para la gestión de precios (Panel Admin)."""
     logging.info("Renderizando página de gestión de precios...")
-    return templates.TemplateResponse("precio.html", {"request": request})
+    return templates.TemplateResponse("admin_precio.html", {"request": request})
 
 @router.get("/reservas", response_class=HTMLResponse)
 async def admin_reservas_page(request: Request):
@@ -221,3 +221,35 @@ def reset_database(current_user: models.User = Depends(get_current_user), db: Se
         return {"msg": "Base de datos reseteada con éxito. Reinicia la aplicación para recargar datos iniciales."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al resetear la base de datos: {str(e)}")
+
+@router.get("/usuarios", response_class=HTMLResponse)
+async def admin_users_page(request: Request):
+    """Vista de gestión de usuarios (Panel Admin)."""
+    logging.info("Renderizando página de gestión de usuarios...")
+    return templates.TemplateResponse("admin_users.html", {"request": request})
+
+@router.get("/users-list")
+def list_users(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Lista todos los usuarios registrados.
+    """
+    if not current_user.permissions.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    users = crud.get_all_users(db)
+    # Devolvemos solo la información necesaria
+    return [{"user_id": u.user_id, "name": u.name, "surname": u.surname, "email": u.email} for u in users]
+
+@router.post("/users/reset-password")
+def reset_user_password(data: schemas.UserPasswordReset, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Resetea la contraseña de un usuario (solo administrador).
+    """
+    if not current_user.permissions.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    user = crud.update_user_password(db, data.user_id, data.new_password)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"msg": f"Contraseña del usuario {user.email} actualizada correctamente"}

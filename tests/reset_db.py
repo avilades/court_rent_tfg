@@ -1,7 +1,9 @@
-"""
-Script para resetear la base de datos eliminando y recreando todas las tablas.
-¡ADVERTENCIA!: Esto eliminará todos los datos existentes de forma permanente.
-"""
+import sys
+import os
+
+# Añadir el directorio raíz al PYTHONPATH para que encuentre el módulo 'app'
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.database import engine
 from app.models import Base
 
