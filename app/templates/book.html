@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin: 0;">Reserva de Pistas</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Visualiza y reserva en un solo vistazo</p>
+        </div>
+        <a href="/dashboard" class="btn-secondary">Volver al Panel</a>
+    </div>
+
+    <!-- Date Selection -->
+    <div class="date-selector"
+        style="margin-bottom: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e9ecef;">
+        <label for="booking-date"
+            style="font-weight: 600; display: block; margin-bottom: 0.5rem; color: #495057;">Selecciona el día</label>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <input type="date" id="booking-date" onchange="loadGrid()"
+                style="padding: 0.75rem; border-radius: 8px; border: 1px solid #ced4da; font-size: 1rem; min-width: 200px;">
+            <span id="day-display" style="font-weight: 500; color: #007bff; font-size: 1.1rem;"></span>
+        </div>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid-scroll-container">
+        <table class="booking-grid">
+            <thead>
+                <tr>
+                    <th class="sticky-col first-col">Hora / Pista</th>
+                    <!-- Court columns will be injected here -->
+                </tr>
+            </thead>
+            <tbody id="grid-body">
+                <!-- Time rows will be injected here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend"
+        style="margin-top: 2rem; display: flex; gap: 2rem; padding: 1rem; background: #fff; border-radius: 8px; border: 1px solid #eee; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 20px; height: 20px; background: #e8f4fd; border: 1px solid #007bff; border-radius: 4px;">
+            </div>
+            <span>Disponible</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div
+                style="width: 20px; height: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #adb5bd; font-size: 12px;">
+                ✖</div>
+            <span>Ocupado</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div
+                style="width: 20px; height: 20px; background: #fff; border: 1px dotted #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                🏠</div>
+            <span>Pista Cubierta</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .grid-scroll-container {
+        overflow-x: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        background: white;
+    }
+
+    .booking-grid {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+
+    .booking-grid th,
+    .booking-grid td {
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0;
+        min-width: 120px;
+        height: 70px;
+        text-align: center;
+    }
+
+    .booking-grid th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.9rem;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .booking-grid .sticky-col {
+        position: sticky;
+        left: 0;
+        background: #f8f9fa;
+        z-index: 11;
+        width: 100px;
+        min-width: 100px;
+        font-weight: 700;
+        border-right: 2px solid #dee2e6;
+    }
+
+    .booking-grid .first-col {
+        z-index: 12;
+        background: #e9ecef;
+    }
+
+    .cell-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .cell-available {
+        background: #e8f4fd;
+        color: #007bff;
+    }
+
+    .cell-available:hover {
+        background: #007bff;
+        color: white;
+        transform: scale(0.98);
+    }
+
+    .cell-taken {
+        background: #f8f9fa;
+        color: #adb5bd;
+        cursor: not-allowed;
+    }
+
+    .cell-price {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .cell-demand {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    .court-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-covered {
+        background: #6c757d;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.65rem;
+    }
+</style>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    const dateInput = document.getElementById('booking-date');
+    const dayDisplay = document.getElementById('day-display');
+    const gridBody = document.getElementById('grid-body');
+    const gridHeaderRow = document.querySelector('.booking-grid thead tr');
+
+    // Inicializar fecha
+    const today = new Date();
+    dateInput.min = today.toISOString().split('T')[0];
+    dateInput.valueAsDate = today;
+
+    const startTimes = [
+        "08:00", "09:30", "11:00", "12:30", "14:00",
+        "15:30", "17:00", "18:30", "20:00", "21:30"
+    ];
+
+    let courts = [];
+    let allSlots = [];
+
+    async function loadGrid() {
+        const date = dateInput.value;
+        if (!date) return;
+
+        // Mostrar día de la semana
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateObj = new Date(date);
+        dayDisplay.textContent = dateObj.toLocaleDateString('es-ES', options);
+
+        try {
+            // 1. Cargar pistas (para saber cuántas columnas y si son cubiertas)
+            if (courts.length === 0) {
+                const resCourts = await fetch('/bookings/search?date=' + date, { // search returns slots but we can infer courts
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const initialSlots = await resCourts.json();
+                // Extraer pistas únicas
+                const courtIds = [...new Set(initialSlots.map(s => s.court_id))].sort((a, b) => a - b);
+                // Necesitaríamos un endpoint de pistas, pero podemos inferirlo o hardcodearlo
+                // Para este ejemplo, usaremos la info de los slots
+                courts = courtIds.map(id => ({
+                    court_id: id,
+                    is_covered: id > 4 // Lógica del initialize.py
+                }));
+                renderHeader();
+            }
+
+            // 2. Cargar disponibilidad
+            const res = await fetch(`/bookings/search?date=${date}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (res.ok) {
+                allSlots = await res.json();
+                renderGridRows();
+            }
+        } catch (error) {
+            console.error('Error cargando el cuadrante:', error);
+        }
+    }
+
+    function renderHeader() {
+        // Limpiar cabeceras extra si existen
+        const headers = gridHeaderRow.querySelectorAll('th:not(.first-col)');
+        headers.forEach(h => h.remove());
+
+        courts.forEach(c => {
+            const th = document.createElement('th');
+            th.innerHTML = `
+                <div class="court-header">
+                    <span>Pista ${c.court_id}</span>
+                    ${c.is_covered ? '<span class="badge-covered">CUBIERTA 🏠</span>' : ''}
+                </div>
+            `;
+            gridHeaderRow.appendChild(th);
+        });
+    }
+
+    function renderGridRows() {
+        gridBody.innerHTML = '';
+
+        startTimes.forEach(time => {
+            const tr = document.createElement('tr');
+
+            // Columna de hora
+            const thTime = document.createElement('th');
+            thTime.className = 'sticky-col';
+            thTime.textContent = time;
+            tr.appendChild(thTime);
+
+            // Columnas de pistas
+            courts.forEach(court => {
+                const td = document.createElement('td');
+
+                // Buscar si este slot está en los resultados (si no está, es que está ocupado o no existe)
+                // Nota: el backend actual en /search solo devuelve slots DISPONIBLES
+                const slot = allSlots.find(s => {
+                    const sTime = new Date(s.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return sTime === time && s.court_id === court.court_id;
+                });
+
+                if (slot) {
+                    td.innerHTML = `
+                        <div class="cell-content cell-available" onclick="confirmBooking(${JSON.stringify(slot).replace(/"/g, '&quot;')})">
+                            <span class="cell-price">${slot.price_amount}€</span>
+                            <span class="cell-demand">Reservar</span>
+                        </div>
+                    `;
+                } else {
+                    td.innerHTML = `
+                        <div class="cell-content cell-taken">
+                            <span>✖</span>
+                            <span style="font-size: 0.6rem;">OCUPADO</span>
+                        </div>
+                    `;
+                }
+                tr.appendChild(td);
+            });
+            gridBody.appendChild(tr);
+        });
+    }
+
+    async function confirmBooking(slot) {
+        const date = dateInput.value;
+        const timeStr = new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        if (!confirm(`¿Confirmar reserva para la Pista ${slot.court_id} a las ${timeStr} el ${date}?\nPrecio: ${slot.price_amount}€`)) return;
+
+        const res = await fetch('/bookings/book', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                court_id: slot.court_id,
+                date: date,
+                time_slot: timeStr
+            })
+        });
+
+        if (res.ok) {
+            alert('¡Reserva confirmada!');
+            loadGrid(); // Recargar el cuadrante para mostrar el hueco ocupado
+        } else {
+            const err = await res.json();
+            alert('Error: ' + err.detail);
+        }
+    }
+
+    // Carga inicial
+    loadGrid();
+</script>
+{% endblock %}

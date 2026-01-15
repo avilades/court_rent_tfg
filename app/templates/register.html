@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 0 auto;">
+    <h2>Registrarse</h2>
+    <div id="error-msg" class="alert alert-error" style="display: none;"></div>
+
+    <form id="register-form">
+        <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" id="surname" required>
+        </div>
+        <div class="form-group">
+            <label>Correo electrónico</label>
+            <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="password" required>
+        </div>
+        <button type="submit">Registrarse</button>
+    </form>
+    <p>Ya registrado? <a href="/">Iniciar sesión</a></p>
+</div>
+
+<script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('name').value,
+            surname: document.getElementById('surname').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            /*
+            {"name":"Tania","surname":"Hater","email":"tnv@tnv.com","password":"Hater"}
+            */
+
+            if (response.ok) {
+                alert(' Registro exitoso! Por favor, inicia sesión.');
+                window.location.href = '/';
+            } else {
+                const err = await response.json();
+                document.getElementById('error-msg').innerText = err.detail || 'Registro fallido';
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+</script>
+{% endblock %}

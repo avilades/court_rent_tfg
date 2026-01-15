@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Reservas</h2>
+        <a href="/dashboard" class="btn-secondary">Volver al Panel</a>
+    </div>
+
+    <!-- Date Filter Section -->
+    <div class="filter-section" style="margin: 1rem 0; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div class="form-group" style="margin: 0;">
+                <label for="date-from" style="display: block; margin-bottom: 0.25rem; font-weight: bold;">Desde:</label>
+                <input type="date" id="date-from">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label for="date-to" style="display: block; margin-bottom: 0.25rem; font-weight: bold;">Hasta:</label>
+                <input type="date" id="date-to">
+            </div>
+            <button onclick="loadBookings()" class="btn-primary" style="align-self: flex-end;">Buscar</button>
+            <button onclick="showAllBookings()" class="btn-secondary" style="align-self: flex-end;">Ver Todas</button>
+        </div>
+    </div>
+
+    <table id="bookings-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Pista</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Bookings injected here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    // Set default date to today
+    function initializeDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date-from').value = today;
+        document.getElementById('date-to').value = today;
+    }
+
+    async function loadBookings() {
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+
+        let url = '/bookings/my-bookings';
+        const params = new URLSearchParams();
+
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+
+        const res = await fetch(url, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+            const bookings = await res.json();
+            const tbody = document.querySelector('#bookings-table tbody');
+            tbody.innerHTML = '';
+
+            if (bookings.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="6" style="text-align:center;">No se encontraron reservas para este período.</td>';
+                tbody.appendChild(tr);
+                return;
+            }
+
+            bookings.forEach(b => {
+                const dateObj = new Date(b.start_time);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                <td>${dateObj.toLocaleDateString()}</td>
+                <td>${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                <td>Pista ${b.court_id}</td>
+                <td>${b.price_amount ? b.price_amount + '€' : '-'}</td>
+                <td>${b.is_cancelled ? '<span style="color:red">Cancelada</span>' : '<span style="color:green">Activa</span>'}</td>
+                <td>
+                    ${!b.is_cancelled ? `<button class="btn-danger" onclick="cancelBooking(${b.booking_id})">Cancelar</button>` : '-'}
+                </td>
+             `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    function showAllBookings() {
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        loadBookings();
+    }
+
+    async function cancelBooking(id) {
+        if (!confirm('¿Seguro que quieres cancelar?')) return;
+
+        const res = await fetch(`/bookings/cancel/${id}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+            alert('Reserva cancelada');
+            loadBookings();
+        } else {
+            alert('Error al cancelar la reserva');
+        }
+    }
+
+    // Init
+    initializeDates();
+    loadBookings();
+</script>
+{% endblock %}

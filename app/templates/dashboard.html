@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-menu">
+    <h2>Bienvenido</h2>
+    <p>Seleccione una opción para continuar:</p>
+
+    <div class="menu-grid">
+        <a href="/book" class="menu-card">
+            <div class="icon">🎾</div>
+            <h3>Reservar Pista</h3>
+            <p>Reserva una pista</p>
+        </a>
+
+        <a href="/reservations" class="menu-card">
+            <div class="icon">📅</div>
+            <h3>Ver Reservas</h3>
+            <p>Ver tus reservas</p>
+        </a>
+
+        <a href="/reservations" class="menu-card">
+            <div class="icon">📅</div>
+            <h3>Ver Reservas</h3>
+            <p>Ver tus reservas</p>
+        </a>
+    </div>
+</div>
+
+<style>
+    .dashboard-menu {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .menu-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eee;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        border-color: #007bff;
+    }
+
+    .menu-card .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .menu-card h3 {
+        color: #007bff;
+        margin: 0.5rem 0;
+    }
+
+    .menu-card p {
+        color: #666;
+    }
+</style>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Panel de Administración</h2>
+
+<div class="menu-grid">
+    <a href="/admin/stats" class="menu-card">
+        <div class="icon">📊</div>
+        <h3>Analíticas</h3>
+        <p>Ver estadísticas de uso</p>
+    </a>
+
+    <a href="/precio" class="menu-card">
+        <div class="icon">🎾</div>
+        <h3>Nuevo Precio</h3>
+        <p>Gestionar Tarífas</p>
+    </a>
+
+    <a href="/reservas" class="menu-card">
+        <div class="icon">📅</div>
+        <h3>Ver Reservas</h3>
+        <p>Histórico total</p>
+    </a>
+</div>
+
+<div class="management-section" style="margin-top: 4rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+    <h3>Gestión de Pistas (Mantenimiento)</h3>
+    <p style="color: #666; margin-bottom: 1.5rem;">Las pistas en mantenimiento no aparecerán en el cuadrante de
+        reservas.</p>
+    <div id="courts-list" class="courts-grid">
+        <!-- Listado de pistas inyectado aquí -->
+    </div>
+</div>
+
+<style>
+    .courts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .court-status-card {
+        padding: 1rem;
+        background: white;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #e6ffed;
+        color: #1e7e34;
+    }
+
+    .status-maint {
+        background: #fff5f5;
+        color: #c53030;
+    }
+
+    .btn-toggle {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: #f8f9fa;
+    }
+
+    .btn-toggle:hover {
+        background: #e9ecef;
+    }
+</style>
+
+<style>
+    .dashboard-menu {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .menu-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eee;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        border-color: #007bff;
+    }
+
+    .menu-card .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .menu-card h3 {
+        color: #007bff;
+        margin: 0.5rem 0;
+    }
+
+    .menu-card p {
+        color: #666;
+    }
+</style>
+
+<script>
+    async function checkAdmin() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                if (!user.permissions || !user.permissions.is_admin) {
+                    console.warn("Acceso denegado: No eres administrador.");
+                    window.location.href = '/dashboard';
+                } else {
+                    loadCourts();
+                }
+            } else {
+                console.error("Error al validar token");
+                localStorage.removeItem('token');
+                window.location.href = '/';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            window.location.href = '/dashboard';
+        }
+    }
+
+    async function loadCourts() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/admin/courts', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const courts = await res.json();
+                renderCourts(courts);
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    function renderCourts(courts) {
+        const container = document.getElementById('courts-list');
+        container.innerHTML = '';
+        courts.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'court-status-card';
+            div.innerHTML = `
+                <span style="font-weight: 600;">Pista ${c.court_id}</span>
+                <span class="status-badge ${c.is_maintenance ? 'status-maint' : 'status-active'}">
+                    ${c.is_maintenance ? 'MANTENIMIENTO' : 'ACTIVA'}
+                </span>
+                <button class="btn-toggle" onclick="toggleMaint(${c.court_id})">
+                    ${c.is_maintenance ? 'Activar' : 'Mantener'}
+                </button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    async function toggleMaint(id) {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/admin/courts/${id}/maintenance`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) loadCourts();
+        } catch (error) { console.error(error); }
+    }
+
+    checkAdmin();
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Pista</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>🎾 Reserva de Pista</h1>
+        <nav id="nav-links">
+            <!-- Dynamic Navigation populated by JS based on auth state -->
+        </nav>
+    </header>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        async function updateNav() {
+            const token = localStorage.getItem('token');
+            const nav = document.getElementById('nav-links');
+
+            if (!token) {
+                nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    let navHtml = '';
+
+                    if (user.permissions && user.permissions.is_admin) {
+                        navHtml += '<a href="/admin">Admin</a> ';
+                    }
+
+                    navHtml += '<a href="/dashboard">Panel</a> ';
+                    navHtml += '<a href="/" onclick="return logout(event)">Cerrar Sesión</a>';
+
+                    nav.innerHTML = navHtml;
+                } else if (response.status === 401) {
+                    // Token expired or invalid
+                    localStorage.removeItem('token');
+                    nav.innerHTML = '<a href="/">Iniciar Sesión</a> <a href="/register">Registrarse</a>';
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                nav.innerHTML = '<a href="/dashboard">Panel</a> <a href="/" onclick="return logout(event)">Cerrar Sesión</a>';
+            }
+        }
+
+        function logout(e) {
+            if (e) e.preventDefault();
+            localStorage.removeItem('token');
+            window.location.href = '/';
+            return false;
+        }
+
+        // Initialize nav
+        updateNav();
+    </script>
+</body>
+
+</html>
