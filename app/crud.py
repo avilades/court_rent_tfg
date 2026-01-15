@@ -140,21 +140,28 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     if existing:
         return None # Conflicto: la pista ya está ocupada
     
-    # 3. Determinar el ID del precio aplicable según el horario (Schedule) y la demanda activa
+    # 3. Determinar el ID del precio aplicable según el horario (Schedule) y la demanda activa en el momento de la reserva
     day_of_week = start_dt.weekday()
     time_obj = start_dt.time()
     
-    # Hacemos un JOIN entre Schedule y Price para encontrar el precio vigente
-    result = db.query(models.Schedule, models.Price).join(
-        models.Price, models.Price.demand_id == models.Schedule.demand_id
-    ).filter(
+    # Buscamos el demand_id para ese horario
+    schedule = db.query(models.Schedule).filter(
         models.Schedule.day_of_week == day_of_week,
-        models.Schedule.start_time == time_obj,
-        models.Price.is_active == True
+        models.Schedule.start_time == time_obj
     ).first()
     
-    # Extraemos el price_id del resultado del JOIN
-    price_id = result[1].price_id if result else None
+    if not schedule:
+        return None
+    
+    # Buscamos el precio vigente para esa demanda en la fecha de la reserva
+    from sqlalchemy import or_
+    price = db.query(models.Price).filter(
+        models.Price.demand_id == schedule.demand_id,
+        models.Price.start_date <= start_dt,
+        or_(models.Price.end_date == None, models.Price.end_date > start_dt)
+    ).order_by(models.Price.start_date.desc()).first()
+    
+    price_id = price.price_id if price else None
     
     if not price_id:
         # Esto no debería ocurrir si el sistema está bien inicializado

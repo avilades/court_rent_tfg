@@ -66,7 +66,9 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
     # Parseo de la fecha objetivo
     target_date = datetime.strptime(date, "%Y-%m-%d").date()
     day_of_week = target_date.weekday()  # 0=Lunes, 6=Domingo
-    courts = crud.get_courts(db)
+    
+    # Solo buscamos en pistas que NO estén en mantenimiento
+    courts = db.query(models.Court).filter(models.Court.is_maintenance == False).all()
     
     available_slots = []
     
@@ -82,19 +84,11 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
             key = f"{b.court_id}_{b.start_time.strftime('%H:%M')}"
             booked_keys.add(key)
     
-    # Obtenemos los precios vigentes para el día de la semana correspondiente (JOIN con Price)
-    results = db.query(models.Schedule, models.Price).join(
-        models.Price, models.Price.demand_id == models.Schedule.demand_id
-    ).filter(
-        models.Schedule.day_of_week == day_of_week,
-        models.Price.is_active == True
-    ).all()
+    # Obtenemos los horarios para el día de la semana
+    schedules = db.query(models.Schedule).filter(models.Schedule.day_of_week == day_of_week).all()
     
-    # Mapa auxiliar para obtener el precio según la hora de inicio
-    time_price_map = {}
-    for sched, price in results:
-        time_str = sched.start_time.strftime('%H:%M')
-        time_price_map[time_str] = price.amount
+    # Mapa de demanda por hora
+    time_demand_map = {s.start_time.strftime('%H:%M'): s.demand_id for s in schedules}
     
     # Generamos la matriz de disponibilidad (Pistas x Horarios)
     for court in courts:
@@ -106,8 +100,21 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
             start_dt = datetime.strptime(f"{date} {t_str}", "%Y-%m-%d %H:%M")
             end_dt = start_dt + timedelta(minutes=90)
             
-            # Recuperamos el precio dinámico asignado a este bloque
-            price_amount = time_price_map.get(t_str)
+            # Recuperamos el ID de demanda para este bloque
+            demand_id = time_demand_map.get(t_str)
+            price_amount = None
+            
+            if demand_id:
+                # Buscamos el precio vigente para esa demanda en ESA fecha/hora específica
+                from sqlalchemy import or_
+                price = db.query(models.Price).filter(
+                    models.Price.demand_id == demand_id,
+                    models.Price.start_date <= start_dt,
+                    or_(models.Price.end_date == None, models.Price.end_date > start_dt)
+                ).order_by(models.Price.start_date.desc()).first()
+                
+                if price:
+                    price_amount = price.amount
             
             # Solo devolvemos los slots que NO están ocupados (o según lógica deseada)
             if not is_taken:

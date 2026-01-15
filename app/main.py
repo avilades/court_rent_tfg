@@ -128,8 +128,27 @@ async def reservations_page(request: Request):
     logging.info("Renderizando página de reservas...")
     return templates.TemplateResponse("reservations.html", {"request": request})
 
+@app.get("/precio", response_class=HTMLResponse)
+async def price_page(request: Request):
+    """Vista para la gestión de precios (Panel Admin)."""
+    logging.info("Renderizando página de gestión de precios...")
+    return templates.TemplateResponse("precio.html", {"request": request})
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     """Panel de administración (solo accesible para usuarios con permisos)."""
     logging.info("Renderizando panel de administración...")
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/admin/stats", response_class=HTMLResponse)
+async def admin_stats_page(request: Request):
+    """Panel de estadísticas para el administrador."""
+    logging.info("Renderizando panel de estadísticas...")
+    return templates.TemplateResponse("admin_stats.html", {"request": request})
+
+@app.get("/reservas", response_class=HTMLResponse)
+async def admin_reservas_page(request: Request):
+    """Vista de gestión de todas las reservas (Panel Admin)."""
+    logging.info("Renderizando página de todas las reservas...")
+    return templates.TemplateResponse("admin_reservas.html", {"request": request})
+

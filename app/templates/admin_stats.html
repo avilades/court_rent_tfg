@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin: 0;">Panel de Analíticas</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Información de uso e ingresos de las instalaciones</p>
+        </div>
+        <a href="/admin" class="btn-secondary">Volver al Admin</a>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Calculando estadísticas...</p>
+    </div>
+
+    <div id="stats-content" style="display: none;">
+        <!-- Resumen Rápido -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Reservas (últimos 30 días)</span>
+                <span class="stat-value" id="total-bookings">-</span>
+            </div>
+            <div class="stat-card primario">
+                <span class="stat-label">Ingresos Totales</span>
+                <span class="stat-value" id="total-income">-€</span>
+            </div>
+        </div>
+
+        <!-- Ocupación por Pista -->
+        <div style="margin-top: 2rem;">
+            <h3>Uso por Pista</h3>
+            <div id="court-stats-container" class="court-bars">
+                <!-- Barras de progreso inyectadas aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #eee;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-card.primario {
+        background: #007bff;
+        color: white;
+        border-color: #0069d9;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .court-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .bar-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .bar-label {
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .bar-outer {
+        height: 12px;
+        background: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .bar-inner {
+        height: 100%;
+        background: #007bff;
+        border-radius: 6px;
+        transition: width 1s ease-out;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+<script>
+    async function loadStats() {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/admin/stats-data', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('total-bookings').textContent = data.total_bookings_30d;
+                document.getElementById('total-income').textContent = data.total_income + '€';
+
+                renderCourtBars(data.court_occupancy);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function renderCourtBars(courts) {
+        const container = document.getElementById('court-stats-container');
+        container.innerHTML = '';
+
+        // Encontrar el valor máximo para normalizar las barras
+        const values = Object.values(courts);
+        const max = Math.max(...values, 1);
+
+        Object.entries(courts).forEach(([name, count]) => {
+            const percentage = (count / max) * 100;
+            const row = document.createElement('div');
+            row.className = 'bar-row';
+            row.innerHTML = `
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="bar-label">${name}</span>
+                    <span style="font-size: 0.85rem; color: #666;">${count} reservas</span>
+                </div>
+                <div class="bar-outer">
+                    <div class="bar-inner" style="width: 0%"></div>
+                </div>
+            `;
+            container.appendChild(row);
+
+            // Animar la barra después de inyectar
+            setTimeout(() => {
+                row.querySelector('.bar-inner').style.width = percentage + '%';
+            }, 100);
+        });
+    }
+
+    // Seguridad básica frontal
+    async function checkAdmin() {
+        const token = localStorage.getItem('token');
+        if (!token) { window.location.href = '/'; return; }
+        const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) {
+            const user = await res.json();
+            if (!user.permissions || !user.permissions.is_admin) window.location.href = '/dashboard';
+            else loadStats();
+        } else window.location.href = '/';
+    }
+
+    checkAdmin();
+</script>
+{% endblock %}

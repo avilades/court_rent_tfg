@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2 style="margin: 0;">Gestión de Reservas</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Consulta el histórico y las próximas reservas</p>
+        </div>
+        <a href="/admin" class="btn-secondary">Volver al Admin</a>
+    </div>
+
+    <!-- Date Selection -->
+    <div class="date-selector"
+        style="margin-bottom: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e9ecef;">
+        <label for="search-date"
+            style="font-weight: 600; display: block; margin-bottom: 0.5rem; color: #495057;">Selecciona el día</label>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <input type="date" id="search-date" onchange="loadBookings()"
+                style="padding: 0.75rem; border-radius: 8px; border: 1px solid #ced4da; font-size: 1rem; min-width: 200px;">
+            <span id="day-display" style="font-weight: 500; color: #007bff; font-size: 1.1rem;"></span>
+        </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="table-container" style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+            <thead style="background: #2c3e50; color: white;">
+                <tr>
+                    <th style="padding: 12px; text-align: left;">Pista</th>
+                    <th style="padding: 12px; text-align: left;">Hora</th>
+                    <th style="padding: 12px; text-align: left;">Usuario</th>
+                    <th style="padding: 12px; text-align: left;">Precio</th>
+                    <th style="padding: 12px; text-align: left;">Estado</th>
+                </tr>
+            </thead>
+            <tbody id="bookings-body">
+                <!-- Data injected here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="no-data" style="display: none; padding: 3rem; text-align: center; color: #666;">
+        <p>No hay reservas registradas para este día.</p>
+    </div>
+</div>
+
+<style>
+    .table-container {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+
+    table th,
+    table td {
+        border-bottom: 1px solid #eee;
+    }
+
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-confirm {
+        background: #e6ffed;
+        color: #1e7e34;
+    }
+
+    .badge-cancel {
+        background: #fff5f5;
+        color: #c53030;
+    }
+</style>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    const searchDate = document.getElementById('search-date');
+    const dayDisplay = document.getElementById('day-display');
+    const bookingsBody = document.getElementById('bookings-body');
+    const noData = document.getElementById('no-data');
+
+    // Inicializar con la fecha de hoy
+    const today = new Date();
+    searchDate.valueAsDate = today;
+
+    async function loadBookings() {
+        const date = searchDate.value;
+        if (!date) return;
+
+        // Mostrar día de la semana
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dayDisplay.textContent = new Date(date).toLocaleDateString('es-ES', options);
+
+        try {
+            const res = await fetch(`/admin/bookings/daily?date=${date}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                renderTable(data);
+            } else {
+                alert('Error al cargar las reservas');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function renderTable(bookings) {
+        bookingsBody.innerHTML = '';
+        if (bookings.length === 0) {
+            noData.style.display = 'block';
+            return;
+        }
+        noData.style.display = 'none';
+
+        bookings.forEach(b => {
+            const time = new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 12px;">Pista ${b.court_id}</td>
+                <td style="padding: 12px; font-weight: 600;">${time}</td>
+                <td style="padding: 12px;">${b.user_email}</td>
+                <td style="padding: 12px; color: #007bff; font-weight: 700;">${b.price_amount}€</td>
+                <td style="padding: 12px;">
+                    <span class="badge ${b.is_cancelled ? 'badge-cancel' : 'badge-confirm'}">
+                        ${b.is_cancelled ? 'Cancelada' : 'Confirmada'}
+                    </span>
+                </td>
+            `;
+            bookingsBody.appendChild(tr);
+        });
+    }
+
+    // Seguridad básica frontal
+    async function checkAdmin() {
+        const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) {
+            const user = await res.json();
+            if (!user.permissions || !user.permissions.is_admin) window.location.href = '/dashboard';
+            else loadBookings();
+        } else window.location.href = '/';
+    }
+
+    checkAdmin();
+</script>
+{% endblock %}

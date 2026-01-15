@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from . import crud, models, schemas, database
 from .database import get_db
 from typing import Optional
+import logging
 
 # --- Constantes de Configuración ---
 # ¡En una aplicación de producción real, estas claves deben estar en variables de entorno!
@@ -38,6 +39,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = schemas.TokenData(email=email)
     except JWTError:
         # Si el token es inválido o ha expirado, JWTError será capturado
+        logging.error(f"Token inválido o expirado: {token}  {credentials_exception}")
         raise credentials_exception
         
     # Buscamos al usuario en la base de datos usando el email extraído del token
@@ -52,4 +54,5 @@ def get_current_active_user(current_user: models.User = Depends(get_current_user
     Actualmente solo devuelve el usuario, pero permite añadir validaciones 
     facilmente (ej. comprobar si la cuenta está bloqueada).
     """
+    logging.info(f"Usuario autenticado: {current_user.email}")
     return current_user

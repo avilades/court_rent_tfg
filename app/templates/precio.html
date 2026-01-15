@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2>Gestión de Precios</h2>
+    <p>Selecciona un precio para modificarlo. Se creará una nueva versión con la fecha de inicio indicada.</p>
+
+    <div id="loading" class="text-center" style="padding: 2rem;">Cargando precios...</div>
+
+    <div id="prices-container" style="display: none;">
+        <table class="prices-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #eee;">
+                    <th style="text-align: left; padding: 1rem;">Descripción</th>
+                    <th style="text-align: left; padding: 1rem;">Precio Actual</th>
+                    <th style="text-align: left; padding: 1rem;">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="prices-body">
+                <!-- Se cargará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="edit-form-container"
+        style="display: none; margin-top: 2.5rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+        <h3 id="edit-title">Modificar Precio</h3>
+        <form id="price-form">
+            <input type="hidden" id="demand_id">
+            <div class="form-group">
+                <label>Nuevo Importe (€)</label>
+                <input type="number" step="0.01" id="new_amount" required>
+            </div>
+            <div class="form-group">
+                <label>Fecha de Inicio</label>
+                <input type="datetime-local" id="start_date" required>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="submit">Guardar Nuevo Precio</button>
+                <button type="button" class="btn-secondary" onclick="cancelEdit()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="status-msg" class="alert" style="display: none; margin-top: 1rem;"></div>
+</div>
+
+<style>
+    .prices-table tr:hover {
+        background-color: #f9f9f9;
+        cursor: pointer;
+    }
+
+    .btn-select {
+        padding: 0.5rem 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-select:hover {
+        background: #0056b3;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+<script>
+    let currentPrices = [];
+
+    async function loadPrices() {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/admin/prices', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                currentPrices = await response.json();
+                renderPrices();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('prices-container').style.display = 'block';
+            } else {
+                showMsg('Error al cargar precios', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showMsg('Error de conexión', 'error');
+        }
+    }
+
+    function renderPrices() {
+        const body = document.getElementById('prices-body');
+        body.innerHTML = '';
+        currentPrices.forEach(p => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="padding: 1rem;">${p.description || 'Sin descripción'}</td>
+                <td style="padding: 1rem;">${p.amount.toFixed(2)}€</td>
+                <td style="padding: 1rem;">
+                    <button class="btn-select" onclick="selectPrice(${p.demand_id}, '${p.description}', ${p.amount})">Seleccionar</button>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+    }
+
+    function selectPrice(demandId, description, amount) {
+        document.getElementById('demand_id').value = demandId;
+        document.getElementById('edit-title').innerText = `Modificar Precio: ${description}`;
+        document.getElementById('new_amount').value = amount;
+
+        // Ponemos por defecto la fecha/hora actual
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('start_date').value = now.toISOString().slice(0, 16);
+
+        document.getElementById('edit-form-container').style.display = 'block';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        document.getElementById('edit-form-container').style.display = 'none';
+        document.getElementById('price-form').reset();
+    }
+
+    document.getElementById('price-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+        const demand_id = parseInt(document.getElementById('demand_id').value);
+        const amount = parseFloat(document.getElementById('new_amount').value);
+        const start_date = document.getElementById('start_date').value;
+
+        try {
+            const response = await fetch('/admin/prices/update', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ demand_id, amount, start_date })
+            });
+
+            if (response.ok) {
+                showMsg('Precio actualizado correctamente', 'success');
+                cancelEdit();
+                loadPrices(); // Recargamos la lista
+            } else {
+                const err = await response.json();
+                showMsg(err.detail || 'Error al actualizar', 'error');
+            }
+        } catch (error) {
+            showMsg('Error de conexión', 'error');
+        }
+    });
+
+    function showMsg(text, type) {
+        const msg = document.getElementById('status-msg');
+        msg.innerText = text;
+        msg.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 5000);
+    }
+
+    // Seguridad básica frontal
+    async function checkAdmin() {
+        const token = localStorage.getItem('token');
+        if (!token) { window.location.href = '/'; return; }
+        const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) {
+            const user = await res.json();
+            if (!user.permissions || !user.permissions.is_admin) window.location.href = '/dashboard';
+            else loadPrices();
+        } else window.location.href = '/';
+    }
+
+    checkAdmin();
+</script>
+{% endblock %}

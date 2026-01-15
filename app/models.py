@@ -52,6 +52,7 @@ class Court(Base):
 
     court_id = Column(Integer, primary_key=True, index=True) # ID identificador (1-8)
     is_covered = Column(Boolean, default=False)             # ¿Es pista cubierta?
+    is_maintenance = Column(Boolean, default=False)         # ¿Está la pista en mantenimiento?
 
     # Relación con las reservas de esta pista
     bookings = relationship("Booking", back_populates="court")

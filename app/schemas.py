@@ -120,3 +120,12 @@ class BookingResponse(BaseModel):
         from_attributes = True
 
     logger.info("BookingResponse: %s", BaseModel)
+
+# --- Esquemas de Precios ---
+
+class PriceUpdate(BaseModel):
+    """Esquema para actualizar un precio."""
+    demand_id: int
+    amount: float
+    start_date: datetime # Fecha de inicio del nuevo precio
+
