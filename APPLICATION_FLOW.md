@@ -89,10 +89,45 @@ Permite anular una reserva que aún no ha ocurrido.
 
 ## 4. Administración del Sistema (Admin)
 
-### A. Panel Administrativo
+Todas las funciones administrativas se han consolidado en el router dedicado `app/routers/admin.py` y bajo el prefijo `/admin`, asegurando un control de acceso centralizado mediante permisos `is_admin`.
+
+### A. Panel de Control Administrativo
 - **Frontend**: `app/templates/admin.html`.
-- **Endpoints**: `/admin/price` y `/admin/reset-database`.
-- **Lógica**: Gestionado en `app/routers/admin.py`, requiere permisos `is_admin` o similares según la acción.
+    - **Ruta**: `GET /admin/`
+    - **Acceso**: Requiere permiso `is_admin`.
+- **Funcionalidad**: Sirve como hub central para acceder a estadísticas, gestión de precios, histórico de reservas y mantenimiento de pistas.
+
+### B. Gestión de Tarifas (Precios)
+- **Frontend**: `app/templates/precio.html`.
+    - **Ruta**: `GET /admin/precio`
+- **Lógica Backend** (`app/routers/admin.py`):
+    1.  **Consulta**: `GET /admin/prices` recupera los precios vigentes para mostrarlos en el formulario.
+    2.  **Actualización**: `POST /admin/prices/update` implementa un sistema de **versionado**:
+        - Desactiva el precio actual poniendo `is_active=False` y fijando la `end_date`.
+        - Crea un nuevo registro con el nuevo importe y `start_date`, manteniendo la trazabilidad histórica de los precios cobrados.
+
+### C. Analíticas y Estadísticas
+- **Frontend**: `app/templates/admin_stats.html`.
+    - **Ruta**: `GET /admin/stats`
+- **Lógica Backend** (`app/routers/admin.py` -> `get_stats_data()`):
+    - **Petición API**: `GET /admin/stats-data`.
+    - **Procesamiento**:
+        1. Calcula la tasa de ocupación de los últimos 30 días.
+        2. Suma los ingresos totales de reservas no canceladas mediante un `JOIN` con la tabla `prices`.
+        3. Agrupa el uso por cada pista individual.
+    - **Visualización**: La UI utiliza barras de progreso dinámicas para mostrar el uso por pista.
+
+### D. Histórico Global de Reservas
+- **Frontend**: `app/templates/admin_reservas.html`.
+    - **Ruta**: `GET /admin/reservas`
+- **Lógica Backend**:
+    - Permite al administrador consultar cualquier reserva del sistema, independientemente de qué usuario la realizó, permitiendo un control total sobre la ocupación.
+
+### E. Mantenimiento de Pistas
+- **Acción**: Desde el Panel Admin (`/admin/`).
+- **Lógica Backend**: `POST /admin/courts/{id}/maintenance`.
+    - Alterna el estado `is_maintenance` de la pista en la base de datos.
+    - **Efecto**: Las pistas en mantenimiento no aparecen como disponibles en el flujo de reserva de los usuarios.
 
 ---
 
@@ -104,6 +139,15 @@ graph TD
     B -->|Login| C(Dashboard)
     C -->|Botón Reservar| D(Página de Reservar)
     C -->|Botón Ver Reservas| E(Página de Mis Reservas)
+    
+    subgraph Administración ["Panel de Administración (/admin)"]
+        H[Admin Hub] -->|Analíticas| I[/admin/stats]
+        H -->|Precios| J[/admin/precio]
+        H -->|Reservas Globales| K[/admin/reservas]
+        H -->|Mantenimiento| L[Activar/Desactivar Pistas]
+    end
+
+    C -- "Si es Admin" --> H
     D -->|Seleccionar y Confirmar| F(Creación en DB)
     F -->|Redirige| E
     E -->|Botón Cancelar| G(Actualización en DB)

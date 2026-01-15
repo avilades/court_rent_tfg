@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import logging
 
@@ -9,6 +8,7 @@ from . import models, database, dependencies
 from .routers import auth, bookings, admin, users
 from .initialize import initialize_schedules, initialize_prices, initialize_courts, initialize_admin_user, initialize_demands
 from .logging_config import setup_logging
+from .templates import templates
 
 # --- Configuración Inicial ---
 
@@ -25,8 +25,6 @@ app = FastAPI(title="Reserva de Pistas")
 # Montamos la carpeta de archivos estáticos (CSS, Imágenes, JS) para que sean accesibles vía URL
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Configuración del motor de plantillas Jinja2 para servir archivos HTML
-templates = Jinja2Templates(directory="app/templates")
 
 # --- Inclusión de Routers para organizar la API ---
 app.include_router(auth.router)     # Rutas de autenticación (login/registro)
@@ -128,27 +126,4 @@ async def reservations_page(request: Request):
     logging.info("Renderizando página de reservas...")
     return templates.TemplateResponse("reservations.html", {"request": request})
 
-@app.get("/precio", response_class=HTMLResponse)
-async def price_page(request: Request):
-    """Vista para la gestión de precios (Panel Admin)."""
-    logging.info("Renderizando página de gestión de precios...")
-    return templates.TemplateResponse("precio.html", {"request": request})
-
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request):
-    """Panel de administración (solo accesible para usuarios con permisos)."""
-    logging.info("Renderizando panel de administración...")
-    return templates.TemplateResponse("admin.html", {"request": request})
-
-@app.get("/admin/stats", response_class=HTMLResponse)
-async def admin_stats_page(request: Request):
-    """Panel de estadísticas para el administrador."""
-    logging.info("Renderizando panel de estadísticas...")
-    return templates.TemplateResponse("admin_stats.html", {"request": request})
-
-@app.get("/reservas", response_class=HTMLResponse)
-async def admin_reservas_page(request: Request):
-    """Vista de gestión de todas las reservas (Panel Admin)."""
-    logging.info("Renderizando página de todas las reservas...")
-    return templates.TemplateResponse("admin_reservas.html", {"request": request})
 

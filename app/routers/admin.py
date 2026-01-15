@@ -1,14 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+import logging
 from .. import crud, schemas, models
 from ..dependencies import get_db, get_current_user
 from ..database import engine
+from ..templates import templates
 
 # Definición del router para las operaciones administrativas
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"] # Categoría para la documentación automática (Swagger)
 )
+
+@router.get("/", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    """Panel de administración (solo accesible para usuarios con permisos)."""
+    logging.info("Renderizando panel de administración...")
+    return templates.TemplateResponse("admin.html", {"request": request})
+
+@router.get("/stats", response_class=HTMLResponse)
+async def admin_stats_page(request: Request):
+    """Panel de estadísticas para el administrador."""
+    logging.info("Renderizando panel de estadísticas...")
+    return templates.TemplateResponse("admin_stats.html", {"request": request})
+
+@router.get("/precio", response_class=HTMLResponse)
+async def price_page(request: Request):
+    """Vista para la gestión de precios (Panel Admin)."""
+    logging.info("Renderizando página de gestión de precios...")
+    return templates.TemplateResponse("precio.html", {"request": request})
+
+@router.get("/reservas", response_class=HTMLResponse)
+async def admin_reservas_page(request: Request):
+    """Vista de gestión de todas las reservas (Panel Admin)."""
+    logging.info("Renderizando página de todas las reservas...")
+    return templates.TemplateResponse("admin_reservas.html", {"request": request})
 
 @router.get("/prices")
 def get_prices(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):

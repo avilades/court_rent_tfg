@@ -28,7 +28,6 @@ Punto de entrada de la aplicación FastAPI. Configura la aplicación, monta arch
     - `dashboard(request)`: Renderiza el panel principal para los usuarios.
     - `book_page(request)`: Renderiza la página para realizar reservas.
     - `reservations_page(request)`: Renderiza la página de mis reservas.
-    - `admin_page(request)`: Renderiza el panel de administración.
 
 ### `models.py`
 Define los modelos de la base de datos utilizando SQLAlchemy. Representa las tablas de la base de datos a través de clases orientadas a objetos.
@@ -78,6 +77,12 @@ Contiene utilidades y dependencias para la seguridad y el manejo de tokens JWT.
     - `get_current_user(token, db)`: Decodifica un token JWT, valida el usuario y lo devuelve.
     - `get_current_active_user(current_user)`: Valida si el usuario actual está activo.
 
+### `templates.py` [NEW]
+Centraliza la configuración del motor de plantillas Jinja2 para evitar dependencias circulares entre `main.py` y los routers.
+
+- **Objetos:**
+    - `templates`: Instancia de `Jinja2Templates` apuntando al directorio `app/templates`.
+
 ### `initialize.py`
 Script de inicialización de datos base para la aplicación (semilla de datos).
 
@@ -115,11 +120,22 @@ Endpoints relacionados con la gestión de reservas y búsqueda de disponibilidad
     - `cancel_booking(booking_id, current_user, db)`: Cancela una reserva existente.
 
 ### `admin.py`
-Endpoints para tareas administrativas.
+Centraliza todos los endpoints relacionados con la administración del sistema, tanto de interfaz (HTML) como de API (JSON).
 
-- **Funciones:**
-    - `create_price(price, description, current_user, db)`: (Simulado) Creación de nuevos precios.
-    - `reset_database(db)`: DANGER: Elimina y recrea todas las tablas de la base de datos.
+- **Funciones de Interfaz (HTML):**
+    - `admin_page(request)`: Renderiza el panel de administración principal.
+    - `admin_stats_page(request)`: Renderiza la página de analíticas.
+    - `price_page(request)`: Renderiza la página de gestión de precios.
+    - `admin_reservas_page(request)`: Renderiza la página con el histórico total de reservas.
+
+- **Funciones de API (JSON/Operaciones):**
+    - `get_prices(current_user, db)`: Lista todos los precios vigentes.
+    - `update_price(data, current_user, db)`: Actualiza un precio con lógica de versionado (cierra el antiguo, crea uno nuevo).
+    - `get_stats_data(current_user, db)`: Calcula estadísticas de uso, ingresos y ocupación por pista.
+    - `list_courts(current_user, db)`: Lista todas las pistas y su estado.
+    - `toggle_maintenance(court_id, current_user, db)`: Activa/Desactiva el estado de mantenimiento de una pista.
+    - `get_daily_bookings(date, current_user, db)`: Lista detallada de reservas para un día específico.
+    - `reset_database(current_user, db)`: **⚠️ PELIGRO**: Borra y recrea todas las tablas del sistema (solo desarrollo).
 
 ### `users.py`
 Router reservado para futuras implementaciones de gestión de perfiles de usuario.

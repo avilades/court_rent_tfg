@@ -40,21 +40,39 @@ La aplicación incluye pgAdmin 4 preconfigurado para gestionar la base de datos.
 
 ## Funcionalidades
 
-*   **Usuarios**: Registro y Login.
+*   **Usuarios**: Registro y Login con autenticación JWT.
 *   **Reservas**:
     *   Búsqueda de pistas disponibles por día y hora.
-    *   Tramos de 90 minutos (8:00 - 23:00).
+    *   Tramos de 90 minutos configurables.
+    *   Cálculo dinámico de precios basado en demanda (Alta, Media, Baja).
     *   Cancelación de reservas (política de cancelación de 24h).
-*   **Persistencia**: Base de datos PostgreSQL con volumen persistente.
+*   **Administración**:
+    *   Panel de control centralizado (`/admin`).
+    *   Gestión de tarifas con histórico de precios (versionado).
+    *   Estadísticas de ocupación e ingresos en tiempo real.
+    *   Mantenimiento de pistas (activación/desactivación).
+*   **Persistencia**: Base de datos PostgreSQL con diseño relacional completo.
 
 ## Estructura del Código
 
-El código está ampliamente comentado para fines educativos.
+El código está organizado siguiendo las mejores prácticas de FastAPI:
 
-*   `app/models.py`: Definición de las tablas de base de datos.
-*   `app/routers/`: Endpoints de la API divididos por funcionalidad.
-*   `app/crud.py`: Lógica de acceso a datos.
+*   `app/main.py`: Punto de entrada y configuración.
+*   `app/models.py`: Definición de las tablas (SQLAlchemy).
+*   `app/routers/`: Módulos de la API (`auth`, `bookings`, `admin`).
+*   `app/crud.py`: Operaciones de base de datos.
+*   `app/templates.py`: Configuración centralizada de Jinja2.
+
+## Documentación Detallada
+
+Para más información, consulta los siguientes documentos:
+- 📄 [PROJECT_DOCUMENTATION.md](file:///d:/GIT/court_rent_tfg/PROJECT_DOCUMENTATION.md): Detalle técnico de clases y funciones.
+- ⚡ [APPLICATION_FLOW.md](file:///d:/GIT/court_rent_tfg/APPLICATION_FLOW.md): Diagramas de flujo y recorridos de usuario.
 
 ## Usuarios de Prueba
+
+Para acceder como administrador:
+- **Email**: `admin@admin.com`
+- **Password**: `admin123` (Configurado en la inicialización)
 
 Puedes registrar un nuevo usuario en la pantalla de inicio. Por defecto tendrá permisos para alquilar.
