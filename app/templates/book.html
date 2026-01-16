@@ -22,6 +22,24 @@
         </div>
     </div>
 
+    <!-- Weather Display -->
+    <div id="weather-container"
+        style="display: none; margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #e0f7fa 0%, #80deea 100%); border: 1px solid #4dd0e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <span id="weather-icon" style="font-size: 3rem;"></span>
+                <div>
+                    <h3 id="weather-temp" style="margin: 0; font-size: 2rem; color: #006064;"></h3>
+                    <p id="weather-desc"
+                        style="margin: 0; color: #00838f; font-weight: 500; text-transform: capitalize;"></p>
+                </div>
+            </div>
+            <div id="weather-suggestion"
+                style="max-width: 300px; text-align: right; color: #006064; font-style: italic; font-size: 0.9rem;">
+            </div>
+        </div>
+    </div>
+
     <!-- Grid Container -->
     <div class="grid-scroll-container">
         <table class="booking-grid">
@@ -227,9 +245,43 @@
             if (res.ok) {
                 allSlots = await res.json();
                 renderGridRows();
+                // Cargar clima
+                fetchWeather(date);
             }
         } catch (error) {
             console.error('Error cargando el cuadrante:', error);
+        }
+    }
+
+    async function fetchWeather(date) {
+        const weatherContainer = document.getElementById('weather-container');
+        const iconEl = document.getElementById('weather-icon');
+        const tempEl = document.getElementById('weather-temp');
+        const descEl = document.getElementById('weather-desc');
+        const suggestEl = document.getElementById('weather-suggestion');
+
+        try {
+            const res = await fetch(`/bookings/weather?date=${date}`);
+            const weather = await res.json();
+
+            iconEl.textContent = weather.icon;
+            tempEl.textContent = `${weather.temperature}°C`;
+            descEl.textContent = weather.description;
+
+            if (weather.is_rainy) {
+                weatherContainer.style.background = 'linear-gradient(135deg, #cfd8dc 0%, #90a4ae 100%)';
+                weatherContainer.style.border = '1px solid #78909c';
+                suggestEl.innerHTML = '⚠️ Se prevé lluvia. <br><strong>Te recomendamos reservar pistas cubiertas (5 a 8).</strong>';
+            } else {
+                weatherContainer.style.background = 'linear-gradient(135deg, #e0f7fa 0%, #80deea 100%)';
+                weatherContainer.style.border = '1px solid #4dd0e1';
+                suggestEl.innerHTML = '☀️ Tiempo ideal para jugar. <br>¡Disfruta del partido!';
+            }
+
+            weatherContainer.style.display = 'block';
+        } catch (error) {
+            console.error('Error cargando clima:', error);
+            weatherContainer.style.display = 'none';
         }
     }
 

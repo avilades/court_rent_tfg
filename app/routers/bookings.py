@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from .. import crud, schemas, models
 from ..dependencies import get_db, get_current_user
+from .. import weather_service
 
 # Router para gestionar las reservas de pistas
 router = APIRouter(
@@ -143,4 +144,11 @@ def cancel_booking(booking_id: int, current_user: models.User = Depends(get_curr
     logging.info(f"Reserva cancelada: ID={booking_id}, Usuario={current_user.email}")
     
     return {"msg": "Reserva cancelada correctamente"}
+
+@router.get("/weather")
+def get_weather(date: str):
+    """
+    Retorna la predicción meteorológica para una fecha dada.
+    """
+    return weather_service.get_weather_prediction(date)
 

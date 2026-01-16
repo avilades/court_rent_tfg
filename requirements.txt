@@ -8,3 +8,5 @@ python-multipart
 passlib
 email-validator
 python-jose[cryptography]
+requests
+python-dotenv
