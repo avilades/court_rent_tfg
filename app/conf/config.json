@@ -1,3 +1,4 @@
 {
-    "open_weather_api_key": "221cf8d0e657ee7670d511fe1d2158fd"
+    "open_weather_api_key": "221cf8d0e657ee7670d511fe1d2158fd",
+    "ruta_carpeta_canchas": "./data/canchas.json"
 }

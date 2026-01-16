@@ -65,7 +65,7 @@ async def log_requests(request: Request, call_next):
         except:
             log_msg += f" | Body: <binary data: {len(body)} bytes>"
     
-    logging.info(log_msg)
+    logging.debug(log_msg)
 
     # 3. Procesar la petición
     response = await call_next(request)
@@ -95,6 +95,17 @@ def startup_event():
 
 # --- Rutas del Frontend (Servicio de HTML) ---
 # Estas rutas devuelven páginas web completas en lugar de solo datos JSON.
+
+# --- Eventos de Apagón (Shutdown) ---
+@app.on_event("shutdown")
+def shutdown_event():
+    """
+    Este evento se ejecuta automáticamente al detener el servidor.
+    Se utiliza para limpiar recursos o realizar acciones finales.
+    """
+    logging.info("Iniciando apagado")
+    logging.info("Limpieza de recursos...")
+    logging.info("Eventos de apagón completados.")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):

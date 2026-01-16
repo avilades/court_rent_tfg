@@ -3,6 +3,11 @@ from . import models, schemas
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
+import logging
+
+# Configuración del logger para este módulo
+logger = logging.getLogger(__name__)
+
 # --- Security Configuration ---
 # Configuración de seguridad para el hashing de contraseñas.
 # 'pbkdf2_sha256' es un algoritmo robusto y recomendado por defecto.
@@ -15,6 +20,7 @@ def verify_password(plain_password, hashed_password):
     :param hashed_password: El hash recuperado de la base de datos.
     :return: True si coinciden, False en caso contrario.
     """
+    logger.info(f"Verifying password: {plain_password}")
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
@@ -23,6 +29,7 @@ def get_password_hash(password):
     :param password: Password en texto plano.
     :return: String con el hash generado.
     """
+    logger.info(f"Hashing password: {password}")
     return pwd_context.hash(password)
 
 # --- User Operations ---
@@ -34,6 +41,7 @@ def get_user_by_email(db: Session, email: str):
     :param email: Email a buscar.
     :return: Objeto User si se encuentra, None si no.
     """
+    logger.info(f"Fetching user by email: {email}")
     return db.query(models.User).filter(models.User.email == email).first()  
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -46,6 +54,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     """
     # 1. Hashear la contraseña
     fake_hashed_password = get_password_hash(user.password)
+    logger.info(f"Hashed password: {fake_hashed_password}")
     
     # 2. Crear instancia del usuario
     db_user = models.User(
@@ -56,6 +65,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     )
     db.add(db_user)
     db.commit()
+    logger.info(f"User created: {db_user}")
     db.refresh(db_user)
 
     # 3. Crear permisos por defecto
@@ -69,7 +79,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     )
     db.add(db_perm)
     db.commit()
-
+    logger.info(f"Permissions for user {db_user.user_id} created: {db_perm}")
     return db_user
 
 # --- Court Operations ---
@@ -120,6 +130,7 @@ def get_user_bookings(db: Session, user_id: int, date_from: str = None, date_to:
             "price_amount": b.price_snapshot.amount if b.price_snapshot else None
         }
         result.append(booking_dict)
+    logger.info(f"Bookings for user {user_id} from {date_from} to {date_to}: {result}")
     return result
 
 def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: int):
@@ -137,7 +148,8 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
         models.Booking.is_cancelled == False
     ).first()
     
-    if existing:
+    if existing:    
+        logger.info(f"Booking conflict: {existing}")
         return None # Conflicto: la pista ya está ocupada
     
     # 3. Determinar el ID del precio aplicable según el horario (Schedule) y la demanda activa en el momento de la reserva
@@ -165,6 +177,7 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     
     if not price_id:
         # Esto no debería ocurrir si el sistema está bien inicializado
+        logger.info("No price found for demand_id: %s", schedule.demand_id)
         return None 
     
     # 4. Crear el registro de la reserva
@@ -177,6 +190,7 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
     )
     db.add(new_booking)
     db.commit()
+    logger.info(f"Booking created for user {user_id} on court {booking_data.court_id} at {booking_data.date} {booking_data.time_slot} price_id: {price_id} con un coste de {new_booking.price_snapshot.amount}")
     db.refresh(new_booking)
     
     # Retornamos un diccionario con la información relevante, incluyendo el precio
@@ -201,6 +215,7 @@ def cancel_booking_logic(db: Session, booking_id: int, user_id: int):
     if booking:
         booking.is_cancelled = True
         db.commit()
+        logger.info(f"Booking cancelled for user {user_id} on booking {booking_id}")
     
     return booking
 
@@ -223,4 +238,5 @@ def update_user_password(db: Session, user_id: int, new_password: str):
         db_user.password_hash = get_password_hash(new_password)
         db.commit()
         db.refresh(db_user)
+        logger.info(f"Password updated for user {user_id}")
     return db_user

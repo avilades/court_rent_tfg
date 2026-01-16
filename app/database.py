@@ -40,5 +40,6 @@ def get_db() -> Generator:
     db = session_local()
     try:
         yield db
+        
     finally:
         db.close()

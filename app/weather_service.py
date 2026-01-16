@@ -77,12 +77,17 @@ def get_weather_prediction(date_str: str):
             ow_icon = weather_data['icon'][:2]
             icon = icon_map.get(ow_icon, "❓")
             
-            return {
+            weather_report = {
                 "temperature": round(main_data['temp']),
                 "description": weather_data['description'].capitalize(),
                 "icon": icon,
-                "is_rainy": ow_icon in ["09", "10", "11"]
-            }
+                "is_rainy": ow_icon in ["09", "10", "11"],
+                "is_snowy": ow_icon in ["13"],
+                "is_cloudy": ow_icon in ["02", "03", "04"]
+            }   
+            logger.info(f"Weather prediction for {date_str}: {weather_report['description']}")
+            return weather_report
+
         else:
             # Si la fecha está fuera del rango de 5 días, usamos el mock
             logger.info(f"Fecha {date_str} fuera del rango de previsión de 5 días. Usando datos simulados.")
