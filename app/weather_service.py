@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 # Latitud y longitud de Madrid capital
 MADRID_LAT = 40.4168
 MADRID_LON = -3.7038
+
+# Latitud y longitud de Majadahonda
+MAJADAHONDA_LAT = 40.4168
+MAJADAHONDA_LON = -3.7038
+
 # Se recomienda configurar esta clave en las variables de entorno
 #OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "RANDOM")
 OPENWEATHER_API_KEY = config["OPENWEATHER_API_KEY"]
@@ -38,7 +43,7 @@ def get_weather_prediction(date_str: str):
             return _get_mock_weather(target_date)
 
         # Llamada a la API de previsión (5 días / 3 horas)
-        url = f"http://api.openweathermap.org/data/2.5/forecast?lat={MADRID_LAT}&lon={MADRID_LON}&appid={OPENWEATHER_API_KEY}&units=metric&lang=es"
+        url = f"http://api.openweathermap.org/data/2.5/forecast?lat={MAJADAHONDA_LAT}&lon={MAJADAHONDA_LON}&appid={OPENWEATHER_API_KEY}&units=metric&lang=es"
         logger.info(f"Llamada a OpenWeatherMap: {url}")
         response = requests.get(url, timeout=5)
         response.raise_for_status()
@@ -83,9 +88,10 @@ def get_weather_prediction(date_str: str):
                 "icon": icon,
                 "is_rainy": ow_icon in ["09", "10", "11"],
                 "is_snowy": ow_icon in ["13"],
-                "is_cloudy": ow_icon in ["02", "03", "04"]
+                "is_cloudy": ow_icon in ["02", "03", "04"],
+                "is_foggy": ow_icon in ["50"]
             }   
-            logger.info(f"Weather prediction for {date_str}: {weather_report['description']}")
+            logger.info(f"Weather prediction for {date_str}: {weather_report}")
             return weather_report
 
         else:
@@ -99,7 +105,10 @@ def get_weather_prediction(date_str: str):
             "temperature": "N/A",
             "description": "Error al obtener clima",
             "icon": "❓",
-            "is_rainy": False
+            "is_rainy": False,
+            "is_snowy": False,
+            "is_cloudy": False,
+            "is_foggy": False
         }
 
 def _get_mock_weather(target_date: dt_date):
@@ -118,5 +127,8 @@ def _get_mock_weather(target_date: dt_date):
         "temperature": temp,
         "description": prediction["description"],
         "icon": prediction["icon"],
-        "is_rainy": prediction["is_rainy"]
+        "is_rainy": prediction["is_rainy"],
+        "is_snowy": prediction["is_snowy"],
+        "is_cloudy": prediction["is_cloudy"],
+        "is_foggy": prediction["is_foggy"]
     }
