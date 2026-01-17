@@ -9,7 +9,7 @@ from .routers import auth, bookings, admin, users
 from .initialize import initialize_schedules, initialize_prices, initialize_courts, initialize_admin_user, initialize_demands
 from .logging_config import setup_logging
 from .templates import templates
-
+from .conf.config_json import initialize_weather
 # --- Configuración Inicial ---
 
 # Inicializamos el sistema de logs (registro de eventos)
@@ -91,6 +91,7 @@ def startup_event():
     initialize_prices(db)        # Inicializa precios base
     initialize_courts(db)        # Crea las pistas si no existen
     initialize_schedules(db)     # Genera el cuadrante horario semanal
+    initialize_weather() # Inicializa el clima
     logging.info("Datos maestros inicializados.")
 
 # --- Rutas del Frontend (Servicio de HTML) ---

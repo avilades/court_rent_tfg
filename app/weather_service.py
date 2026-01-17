@@ -5,23 +5,21 @@ from datetime import datetime, date as dt_date
 import logging
 #from dotenv import load_dotenv
 from dotenv import dotenv_values
+from .conf.config_json import initialize_weather
+
 
 # Cargar variables de entorno desde el archivo .env si existe
-#load_dotenv()
+# load_dotenv()
 config = dotenv_values(".env")
+#config_json.leer_config("./app/conf/config.json")
 
 # Configuración del logger para este módulo
 logger = logging.getLogger(__name__)
 
 
 # Configuración de OpenWeatherMap
-# Latitud y longitud de Madrid capital
-MADRID_LAT = 40.4168
-MADRID_LON = -3.7038
-
-# Latitud y longitud de Majadahonda
-MAJADAHONDA_LAT = 40.4168
-MAJADAHONDA_LON = -3.7038
+LATITUD = initialize_weather()[0]  # Latitud de Madrid
+LONGITUD = initialize_weather()[1] # Longitud de Madrid
 
 # Se recomienda configurar esta clave en las variables de entorno
 #OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "RANDOM")
@@ -34,6 +32,10 @@ def get_weather_prediction(date_str: str):
     Obtiene la predicción meteorológica para Madrid para una fecha específica.
     Usa la API de OpenWeatherMap (5 day / 3 hour forecast).
     """
+    logger.debug(f"OpenWeatherMap LATITUD: {LATITUD}")
+    logger.debug(f"OpenWeatherMap LONGITUD: {LONGITUD}")
+
+
     try:
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         
@@ -43,7 +45,7 @@ def get_weather_prediction(date_str: str):
             return _get_mock_weather(target_date)
 
         # Llamada a la API de previsión (5 días / 3 horas)
-        url = f"http://api.openweathermap.org/data/2.5/forecast?lat={MAJADAHONDA_LAT}&lon={MAJADAHONDA_LON}&appid={OPENWEATHER_API_KEY}&units=metric&lang=es"
+        url = f"http://api.openweathermap.org/data/2.5/forecast?lat={LATITUD}&lon={LONGITUD}&appid={OPENWEATHER_API_KEY}&units=metric&lang=es"
         logger.info(f"Llamada a OpenWeatherMap: {url}")
         response = requests.get(url, timeout=5)
         response.raise_for_status()

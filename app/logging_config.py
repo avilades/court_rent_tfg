@@ -47,7 +47,7 @@ def setup_logging():
     # Configuración global del logger raíz
     logging.basicConfig(
         #level definimos el nivel de logado DEBUG, INFO, WARNING, ERROR, CRITICAL
-        level=logging.INFO, 
+        level=logging.DEBUG, 
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             handler

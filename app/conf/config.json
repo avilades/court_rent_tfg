@@ -1,4 +1,7 @@
 {
-    "open_weather_api_key": "221cf8d0e657ee7670d511fe1d2158fd",
-    "ruta_carpeta_canchas": "./data/canchas.json"
+    "datos": "varios",
+    "latitud_MAD": "40.426667",
+    "longitud_MAD": "-3.696111",
+    "latitud": "40.474",
+    "longitud": "-3.872"
 }
