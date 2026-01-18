@@ -98,8 +98,19 @@ def get_weather_prediction(date_str: str):
 
         else:
             # Si la fecha está fuera del rango de 5 días, usamos el mock
-            logger.info(f"Fecha {date_str} fuera del rango de previsión de 5 días. Usando datos simulados.")
-            return _get_mock_weather(target_date)
+            weather_report = {
+                "temperature": round(0.0),
+                "description": "Sin informacion",
+                "icon": "❓",
+                "is_rainy": False,
+                "is_snowy": False,
+                "is_cloudy": False,
+                "is_foggy": False
+            }   
+            logger.info(f"Weather prediction for {date_str}: {weather_report}")
+            return weather_report
+            #logger.info(f"Fecha {date_str} fuera del rango de previsión de 5 días. Usando datos simulados.")
+            #return _get_mock_weather(target_date)
 
     except Exception as e:
         logger.error(f"Error al llamar a OpenWeatherMap: {e}")
@@ -110,7 +121,8 @@ def get_weather_prediction(date_str: str):
             "is_rainy": False,
             "is_snowy": False,
             "is_cloudy": False,
-            "is_foggy": False
+            "is_foggy": False,
+            "is_unknown": True
         }
 
 def _get_mock_weather(target_date: dt_date):

@@ -280,6 +280,10 @@
                 weatherContainer.style.background = 'linear-gradient(135deg, #cfd8dc 0%, #90a4ae 100%)';
                 weatherContainer.style.border = '1px solid #78909c';
                 suggestEl.innerHTML = '⚠️ Se prevé nublado. <br><strong>Te recomendamos reservar pistas cubiertas (5 a 8).</strong>';
+            } else if (weather.is_unknown) {
+                weatherContainer.style.background = 'linear-gradient(135deg, #cfd8dc 0%, #90a4ae 100%)';
+                weatherContainer.style.border = '1px solid #78909c';
+                suggestEl.innerHTML = '⚠️ Sin previsión. <br><strong>No podemos recomendarte una pista.</strong>';
             } else {
                 weatherContainer.style.background = 'linear-gradient(135deg, #e0f7fa 0%, #80deea 100%)';
                 weatherContainer.style.border = '1px solid #4dd0e1';

@@ -10,3 +10,4 @@ email-validator
 python-jose[cryptography]
 requests
 python-dotenv
+fastapi[standard]
