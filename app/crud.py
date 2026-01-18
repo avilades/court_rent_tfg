@@ -20,7 +20,13 @@ def verify_password(plain_password, hashed_password):
     :param hashed_password: El hash recuperado de la base de datos.
     :return: True si coinciden, False en caso contrario.
     """
-    logger.info(f"Verifying password: {plain_password}")
+    if not plain_password or not hashed_password:
+        logger.warning(f"Password verification failed: {plain_password}")
+        return False
+    if not pwd_context.verify(plain_password, hashed_password):
+        logger.warning(f"Password verification failed: {plain_password}")
+        return False
+    logger.info(f"Password verification successful: {plain_password}")
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):

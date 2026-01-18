@@ -98,7 +98,7 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
     if not current_user.permissions.is_admin:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
-    from sqlalchemy import func
+    from sqlalchemy import func, desc, extract, cast, Integer
     from datetime import datetime, timedelta
 
     # 1. Tasa de ocupación (Últimos 30 días)
@@ -107,6 +107,13 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
         models.Booking.start_time >= thirty_days_ago,
         models.Booking.is_cancelled == False
     ).count()
+
+    # 1.1 Tasa de Cancelación (Global)
+    total_all_time = db.query(models.Booking).count()
+    total_cancelled = db.query(models.Booking).filter(models.Booking.is_cancelled == True).count()
+    cancellation_rate = 0.0
+    if total_all_time > 0:
+        cancellation_rate = round((total_cancelled / total_all_time) * 100, 1)
     
     # 2. Ingresos totales (Agrupados por mes)
     income_by_price = db.query(
@@ -117,6 +124,21 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
         models.Booking.is_cancelled == False
     ).scalar() or 0.0
 
+    # 2.1 Ingresos por Tipo de Demanda
+    # Join: Price -> Demand
+    income_by_demand_query = db.query(
+        models.Demand.description,
+        func.sum(models.Price.amount)
+    ).select_from(models.Booking).join(
+        models.Price, models.Booking.price_id == models.Price.price_id
+    ).join(
+        models.Demand, models.Price.demand_id == models.Demand.demand_id
+    ).filter(
+        models.Booking.is_cancelled == False
+    ).group_by(models.Demand.description).all()
+
+    income_by_demand = {desc: round(amount, 2) for desc, amount in income_by_demand_query}
+
     # 3. Ocupación por pista
     occupancy_by_court = db.query(
         models.Booking.court_id, func.count(models.Booking.booking_id)
@@ -126,10 +148,42 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
     
     court_stats = {f"Pista {c_id}": count for c_id, count in occupancy_by_court}
 
+    # 4. Horas Punta (Top 3 horas más reservadas)
+    # Extract hour from start_time
+    peak_hours_query = db.query(
+        extract('hour', models.Booking.start_time).label('hour'),
+        func.count(models.Booking.booking_id).label('count')
+    ).filter(
+        models.Booking.is_cancelled == False
+    ).group_by('hour').order_by(desc('count')).limit(3).all()
+
+    peak_hours = [{"hour": int(h), "count": c} for h, c in peak_hours_query]
+
+    # 5. Top Usuarios (Top 5)
+    top_users_query = db.query(
+        models.User.email,
+        models.User.name,
+        models.User.surname,
+        func.count(models.Booking.booking_id).label('count')
+    ).join(
+        models.Booking, models.Booking.user_id == models.User.user_id
+    ).filter(
+        models.Booking.is_cancelled == False
+    ).group_by(models.User.user_id).order_by(desc('count')).limit(5).all()
+
+    top_users = [
+        {"email": u.email, "name": f"{u.name} {u.surname}", "count": u.count} 
+        for u in top_users_query
+    ]
+
     return {
         "total_bookings_30d": total_bookings,
         "total_income": round(income_by_price, 2),
-        "court_occupancy": court_stats
+        "cancellation_rate": cancellation_rate,
+        "court_occupancy": court_stats,
+        "income_by_demand": income_by_demand,
+        "peak_hours": peak_hours,
+        "top_users": top_users
     }
 
 @router.get("/courts")

@@ -10,6 +10,10 @@ Desarrollada con **FastAPI**, **SQLAlchemy**, **PostgreSQL** y **Docker**.
 
 ## Cómo ejecutar el proyecto
 
+0.  **Configuración Inicial**:
+    *   Crea un archivo `.env` en la raíz del proyecto (puedes copiar `.env.example`).
+    *   Asegúrate de que `app/conf/config.json` existe con los parámetros requeridos.
+
 1.  Abre esta carpeta en VS Code.
 2.  Cuando aparezca la notificación "Folder contains a Dev Container configuration file...", haz clic en **Reopen in Container**.
     *   Alternativamente: `F1` > `Dev Containers: Reopen in Container`.

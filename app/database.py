@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --- Configuración de la Base de Datos ---
 # Utilizamos PostgreSQL como motor de persistencia.
@@ -39,7 +42,9 @@ def get_db() -> Generator:
     """
     db = session_local()
     try:
+        logger.debug("Conectando a la base de datos")
         yield db
         
     finally:
+        logger.debug("Cerrando conexion a la base de datos")
         db.close()

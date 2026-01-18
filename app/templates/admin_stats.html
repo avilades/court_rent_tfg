@@ -18,20 +18,37 @@
         <!-- Resumen Rápido -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-label">Reservas (últimos 30 días)</span>
+                <span class="stat-label">Reservas (30 días)</span>
                 <span class="stat-value" id="total-bookings">-</span>
             </div>
             <div class="stat-card primario">
                 <span class="stat-label">Ingresos Totales</span>
                 <span class="stat-value" id="total-income">-€</span>
             </div>
+            <div class="stat-card alert-card">
+                <span class="stat-label">Tasa de Cancelación</span>
+                <span class="stat-value" id="cancellation-rate">- %</span>
+            </div>
         </div>
 
-        <!-- Ocupación por Pista -->
-        <div style="margin-top: 2rem;">
-            <h3>Uso por Pista</h3>
-            <div id="court-stats-container" class="court-bars">
-                <!-- Barras de progreso inyectadas aquí -->
+        <!-- Business Insights -->
+        <div class="insights-container">
+            <!-- Columna Izquierda: Ocupación y Picos -->
+            <div class="insight-column">
+                <h3>Uso por Pista</h3>
+                <div id="court-stats-container" class="court-bars text-small"></div>
+
+                <h3 style="margin-top: 2rem;">Horas Punta (Top 3)</h3>
+                <div id="peak-hours-container" class="simple-list"></div>
+            </div>
+
+            <!-- Columna Derecha: Ingresos y Usuarios -->
+            <div class="insight-column">
+                <h3>Ingresos por Demanda</h3>
+                <div id="income-demand-container" class="court-bars text-small"></div>
+
+                <h3 style="margin-top: 2rem;">Top 5 Usuarios Fieles</h3>
+                <ul id="top-users-list" class="user-list"></ul>
             </div>
         </div>
     </div>
@@ -106,6 +123,68 @@
     .text-center {
         text-align: center;
     }
+
+    .text-small {
+        font-size: 0.9rem;
+    }
+
+    .insights-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .insights-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .alert-card {
+        border-left: 4px solid #dc3545;
+    }
+
+    .simple-list {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .peak-hour-badge {
+        background: #e2e6ea;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .user-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .user-list li {
+        padding: 0.8rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .user-list li:last-child {
+        border-bottom: none;
+    }
+
+    .user-count {
+        background: #d4edda;
+        color: #155724;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
 </style>
 
 <script>
@@ -120,8 +199,12 @@
                 const data = await res.json();
                 document.getElementById('total-bookings').textContent = data.total_bookings_30d;
                 document.getElementById('total-income').textContent = data.total_income + '€';
+                document.getElementById('cancellation-rate').textContent = data.cancellation_rate + '%';
 
                 renderCourtBars(data.court_occupancy);
+                renderDemandBars(data.income_by_demand);
+                renderPeakHours(data.peak_hours);
+                renderTopUsers(data.top_users);
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('stats-content').style.display = 'block';
@@ -134,30 +217,69 @@
     function renderCourtBars(courts) {
         const container = document.getElementById('court-stats-container');
         container.innerHTML = '';
-
-        // Encontrar el valor máximo para normalizar las barras
         const values = Object.values(courts);
         const max = Math.max(...values, 1);
 
         Object.entries(courts).forEach(([name, count]) => {
             const percentage = (count / max) * 100;
-            const row = document.createElement('div');
-            row.className = 'bar-row';
-            row.innerHTML = `
-                <div style="display: flex; justify-content: space-between;">
-                    <span class="bar-label">${name}</span>
-                    <span style="font-size: 0.85rem; color: #666;">${count} reservas</span>
-                </div>
-                <div class="bar-outer">
-                    <div class="bar-inner" style="width: 0%"></div>
-                </div>
-            `;
-            container.appendChild(row);
+            createBar(container, name, `${count} reservas`, percentage);
+        });
+    }
 
-            // Animar la barra después de inyectar
-            setTimeout(() => {
-                row.querySelector('.bar-inner').style.width = percentage + '%';
-            }, 100);
+    function renderDemandBars(demands) {
+        const container = document.getElementById('income-demand-container');
+        container.innerHTML = '';
+        const values = Object.values(demands);
+        const max = Math.max(...values, 1);
+
+        Object.entries(demands).forEach(([name, income]) => {
+            const percentage = (income / max) * 100;
+            createBar(container, name, `${income}€`, percentage, '#28a745');
+        });
+    }
+
+    function createBar(container, label, valueLabel, percentage, color = '#007bff') {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+            <div style="display: flex; justify-content: space-between;">
+                <span class="bar-label">${label}</span>
+                <span style="font-size: 0.85rem; color: #666;">${valueLabel}</span>
+            </div>
+            <div class="bar-outer">
+                <div class="bar-inner" style="width: 0%; background-color: ${color}"></div>
+            </div>
+        `;
+        container.appendChild(row);
+        setTimeout(() => { row.querySelector('.bar-inner').style.width = percentage + '%'; }, 100);
+    }
+
+    function renderPeakHours(hours) {
+        const container = document.getElementById('peak-hours-container');
+        if (hours.length === 0) { container.innerHTML = '<p class="text-small">Sin datos suficientes</p>'; return; }
+
+        hours.forEach(h => {
+            const badge = document.createElement('div');
+            badge.className = 'peak-hour-badge';
+            badge.textContent = `${h.hour}:00 - ${h.hour}:59 (${h.count} res.)`;
+            container.appendChild(badge);
+        });
+    }
+
+    function renderTopUsers(users) {
+        const list = document.getElementById('top-users-list');
+        if (users.length === 0) { list.innerHTML = '<li class="text-small">Sin datos suficientes</li>'; return; }
+
+        users.forEach(u => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div>
+                    <strong>${u.name}</strong><br>
+                    <span style="font-size: 0.8rem; color:#888">${u.email}</span>
+                </div>
+                <span class="user-count">${u.count} res.</span>
+            `;
+            list.appendChild(li);
         });
     }
 
