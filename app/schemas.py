@@ -21,7 +21,6 @@ class UserCreate(UserBase):
     """Datos necesarios para crear un nuevo usuario (incluye contraseña)."""
     password: str
 
-    logger.info("UserCreate: %s", UserBase)
 
 class UserResponse(UserBase):
     """Datos de usuario que devolvemos en las respuestas de la API."""
@@ -44,13 +43,9 @@ class PermissionResponse(BaseModel):
     class Config:
         from_attributes = True
 
-    logger.info("PermissionResponse: %s", BaseModel)
-
 class UserWithPermissions(UserResponse):
     """Extensión de UserResponse que incluye la información de sus permisos."""
     permissions: Optional[PermissionResponse] = None
-
-    logger.info("UserWithPermissions: %s", UserResponse)
 
 # --- Esquemas de Tokens (Autenticación JWT) ---
 
@@ -59,20 +54,14 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-    logger.info("Token: %s", BaseModel)
-
 class TokenData(BaseModel):
     """Datos contenidos dentro del payload del token (ej. email)."""
     email: Optional[str] = None
-
-    logger.info("TokenData: %s", BaseModel)
 
 class UserLogin(BaseModel):
     """Estructura esperada para el formulario de inicio de sesión."""
     email: str
     password: str
-
-    logger.info("UserLogin: %s", BaseModel)
 
 # --- Esquemas de Pistas ---
 
@@ -84,8 +73,6 @@ class CourtResponse(BaseModel):
     class Config:
         from_attributes = True
 
-    logger.info("CourtResponse: %s", BaseModel)
-
 # --- Esquemas de Disponibilidad y Horarios ---
 
 class SlotBase(BaseModel):
@@ -96,8 +83,6 @@ class SlotBase(BaseModel):
     is_available: bool
     price_amount: Optional[float] = None  # Precio aplicable para este slot
 
-    logger.info("SlotBase: %s", BaseModel)
-
 # --- Esquemas de Reservas ---
 
 class BookingCreate(BaseModel):
@@ -105,8 +90,6 @@ class BookingCreate(BaseModel):
     court_id: int
     date: str       # Formato "YYYY-MM-DD"
     time_slot: str  # Formato "HH:MM" (hora de inicio)
-
-    logger.info("BookingCreate: %s", BaseModel)
 
 class BookingResponse(BaseModel):
     """Información que se devuelve tras consultar o realizar una reserva."""
@@ -118,8 +101,6 @@ class BookingResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-    logger.info("BookingResponse: %s", BaseModel)
 
 # --- Esquemas de Precios ---
 

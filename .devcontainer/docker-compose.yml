@@ -11,6 +11,8 @@ services:
     depends_on:
       - db
     network_mode: service:db
+    ports:
+      - "8000:8000"
 
   db:
     image: postgres:15-alpine

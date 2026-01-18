@@ -6,6 +6,10 @@ from .. import crud, schemas, models
 from ..dependencies import get_db, get_current_user
 from .. import weather_service
 
+
+# inicializamos el logger
+logger = logging.getLogger(__name__)
+
 # Router para gestionar las reservas de pistas
 router = APIRouter(
     prefix="/bookings",
