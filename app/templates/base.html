@@ -21,8 +21,12 @@
     </div>
 
     <footer>
-        <h3>&copy; 2026 Reserva de Pista. Todos los derechos reservados.</h3>
+        <p>&copy; <span id="year"></span> Reserva de Pista. Todos los derechos reservados.</p>
     </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 
     <script>
         async function updateNav() {

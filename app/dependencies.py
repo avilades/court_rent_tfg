@@ -60,10 +60,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     # Buscamos al usuario en la base de datos usando el email extraído del token
     user = crud.get_user_by_email(db, email=token_data.email)
     logger.info(f"Usuario autenticado: {user.email}")
-    logger.info(f"Configuración: {config}")
-    logger.info(f"Configuración: {SECRET_KEY}")
-    logger.info(f"Configuración: {ALGORITHM}")
-    logger.info(f"Configuración: {ACCESS_TOKEN_EXPIRE_MINUTES}")
+    # logger.info(f"Configuración: {config}")
+    # logger.info(f"Configuración: {SECRET_KEY}")
+    # logger.info(f"Configuración: {ALGORITHM}")
+    # logger.info(f"Configuración: {ACCESS_TOKEN_EXPIRE_MINUTES}")
     if user is None:
         raise credentials_exception
     return user
