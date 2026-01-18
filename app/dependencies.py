@@ -7,11 +7,26 @@ from .database import get_db
 from typing import Optional
 import logging
 
+from dotenv import dotenv_values
+
+# Configuración del logger para este módulo
+logger = logging.getLogger(__name__)
+
+# Cargar variables de entorno desde el archivo .env si existe
+# .env no se sube al git, con lo que no lo podran ver
+# load_dotenv()
+config = dotenv_values(".env")
+logger.info(f"Configuración: {config}")
+logger.info(f"Configuración: {config['SECRET_KEY']}")
+logger.info(f"Configuración: {config['ALGORITHM']}")
+logger.info(f"Configuración: {config['ACCESS_TOKEN_EXPIRE_MINUTES']}")
+
+
 # --- Constantes de Configuración ---
 # ¡En una aplicación de producción real, estas claves deben estar en variables de entorno!
-SECRET_KEY = "supersecretkey" # CAMBIAR PARA PRODUCCIÓN
-ALGORITHM = "HS256"           # Algoritmo de cifrado para el token JWT
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 # Tiempo de vida del token (30 minutos)
+SECRET_KEY = config["SECRET_KEY"]                                       # CAMBIAR PARA PRODUCCIÓN
+ALGORITHM = config["ALGORITHM"]                                         # Algoritmo de cifrado para el token JWT
+ACCESS_TOKEN_EXPIRE_MINUTES = int(config["ACCESS_TOKEN_EXPIRE_MINUTES"]) # Tiempo de vida del token (30 minutos)
 
 # OAuth2PasswordBearer es una clase que le indica a FastAPI 
 # que el cliente enviará un token en la cabecera "Authorization" como tipo "Bearer".
@@ -26,7 +41,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     Si algo falla o el usuario no existe, lanza una excepción 401 (No autorizado).
     """
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
+        status_code=status.HTTP_401_UNAUTHORIZED,       
         detail="No se han podido validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
@@ -39,11 +54,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = schemas.TokenData(email=email)
     except JWTError:
         # Si el token es inválido o ha expirado, JWTError será capturado
-        logging.error(f"Token inválido o expirado: {token}  {credentials_exception}")
+        logger.error(f"Token inválido o expirado: {token}  {credentials_exception}")
         raise credentials_exception
         
     # Buscamos al usuario en la base de datos usando el email extraído del token
     user = crud.get_user_by_email(db, email=token_data.email)
+    logger.info(f"Usuario autenticado: {user.email}")
+    logger.info(f"Configuración: {config}")
+    logger.info(f"Configuración: {SECRET_KEY}")
+    logger.info(f"Configuración: {ALGORITHM}")
+    logger.info(f"Configuración: {ACCESS_TOKEN_EXPIRE_MINUTES}")
     if user is None:
         raise credentials_exception
     return user
@@ -54,5 +74,5 @@ def get_current_active_user(current_user: models.User = Depends(get_current_user
     Actualmente solo devuelve el usuario, pero permite añadir validaciones 
     facilmente (ej. comprobar si la cuenta está bloqueada).
     """
-    logging.info(f"Usuario autenticado: {current_user.email}")
+    logger.info(f"Usuario autenticado: {current_user.email}")
     return current_user

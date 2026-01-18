@@ -7,6 +7,7 @@ from .. import crud, schemas, dependencies, database, models
 from ..dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from jose import jwt
 
+
 # Router para gestionar la autenticación de usuarios
 router = APIRouter(
     prefix="/auth",

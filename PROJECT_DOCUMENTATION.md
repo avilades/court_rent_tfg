@@ -13,6 +13,24 @@ El proyecto está organizado de la siguiente manera:
 - `logs/`: Directorio donde se almacenan los archivos de log.
 - `requirements.txt`: Dependencias del proyecto.
 - `tests/reset_db.py`: Script para resetear la base de datos.
+- `.env`: Variables de entorno (secreto).
+- `.env.example`: Ejemplo de variables de entorno.
+
+---
+
+## Configuración y Variables de Entorno
+
+### `.env`
+Archivo ubicado en la raíz del proyecto (no subido a git) que contiene secretos y configuraciones sensibles.
+- `OPENWEATHER_API_KEY`: Clave de API para OpenWeatherMap.
+- `SECRET_KEY`: Clave secreta para firmar tokens JWT.
+- `ALGORITHM`: Algoritmo de encriptación (ej. HS256).
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Tiempo de expiración de la sesión.
+
+### `app/conf/config.json`
+Archivo JSON para configuraciones generales de la aplicacion que pueden ser versionadas.
+- Coordenadas por defecto (Latitud/Longitud).
+- Otros parámetros de negocio no críticos.
 
 ---
 
@@ -83,6 +101,13 @@ Centraliza la configuración del motor de plantillas Jinja2 para evitar dependen
 - **Objetos:**
     - `templates`: Instancia de `Jinja2Templates` apuntando al directorio `app/templates`.
 
+### `weather_service.py` [NEW]
+Servicio encargado de la integración con la API de OpenWeatherMap.
+- **Funciones:**
+    - `get_weather_prediction(date_str)`: Obtiene la predicción del clima para una fecha dada.
+    - `_get_mock_weather(target_date)`: Genera datos simulados si la API falla o no hay key.
+    - `initialize_weather()`: Carga configuración inicial desde `app/conf/config.json`.
+
 ### `initialize.py`
 Script de inicialización de datos base para la aplicación (semilla de datos).
 
@@ -136,6 +161,8 @@ Centraliza todos los endpoints relacionados con la administración del sistema, 
     - `toggle_maintenance(court_id, current_user, db)`: Activa/Desactiva el estado de mantenimiento de una pista.
     - `get_daily_bookings(date, current_user, db)`: Lista detallada de reservas para un día específico.
     - `reset_database(current_user, db)`: **⚠️ PELIGRO**: Borra y recrea todas las tablas del sistema (solo desarrollo).
+    - `list_users(current_user, db)`: [NEW] Lista todos los usuarios registrados.
+    - `reset_user_password(data, current_user, db)`: [NEW] Resetea la contraseña de un usuario específico.
 
 ### `users.py`
 Router reservado para futuras implementaciones de gestión de perfiles de usuario.
