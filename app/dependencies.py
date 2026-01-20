@@ -16,11 +16,7 @@ logger = logging.getLogger(__name__)
 # .env no se sube al git, con lo que no lo podran ver
 # load_dotenv()
 config = dotenv_values(".env")
-logger.info(f"Configuración: {config}")
-logger.info(f"Configuración: {config['SECRET_KEY']}")
-logger.info(f"Configuración: {config['ALGORITHM']}")
-logger.info(f"Configuración: {config['ACCESS_TOKEN_EXPIRE_MINUTES']}")
-
+logger.info(f"Configuración cargada desde .env")
 
 # --- Constantes de Configuración ---
 # ¡En una aplicación de producción real, estas claves deben estar en variables de entorno!
