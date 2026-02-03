@@ -7,6 +7,10 @@ from ..dependencies import get_db, get_current_user
 from ..database import engine
 from ..templates import templates
 
+
+# Configuración del logger para este módulo
+logger = logging.getLogger(__name__)
+
 # Definición del router para las operaciones administrativas
 router = APIRouter(
     prefix="/admin",
@@ -16,25 +20,25 @@ router = APIRouter(
 @router.get("/", response_class=HTMLResponse)
 async def admin_page(request: Request):
     """Panel de administración (solo accesible para usuarios con permisos)."""
-    logging.info("Renderizando panel de administración...")
+    logger.info("Renderizando panel de administración...")
     return templates.TemplateResponse("admin.html", {"request": request})
 
 @router.get("/stats", response_class=HTMLResponse)
 async def admin_stats_page(request: Request):
     """Panel de estadísticas para el administrador."""
-    logging.info("Renderizando panel de estadísticas...")
+    logger.info("Renderizando panel de estadísticas...")
     return templates.TemplateResponse("admin_stats.html", {"request": request})
 
 @router.get("/precio", response_class=HTMLResponse)
 async def price_page(request: Request):
     """Vista para la gestión de precios (Panel Admin)."""
-    logging.info("Renderizando página de gestión de precios...")
+    logger.info("Renderizando página de gestión de precios...")
     return templates.TemplateResponse("admin_precio.html", {"request": request})
 
 @router.get("/reservas", response_class=HTMLResponse)
 async def admin_reservas_page(request: Request):
     """Vista de gestión de todas las reservas (Panel Admin)."""
-    logging.info("Renderizando página de todas las reservas...")
+    logger.info("Renderizando página de todas las reservas...")
     return templates.TemplateResponse("admin_reservas.html", {"request": request})
 
 @router.get("/prices")
@@ -46,8 +50,15 @@ def get_prices(current_user: models.User = Depends(get_current_user), db: Sessio
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     prices = db.query(models.Price).filter(models.Price.is_active == True).all()
+    logger.info("Precios obtenidos correctamente")
     # Retornamos los campos necesarios para el frontend
-    return [{"price_id": p.price_id, "demand_id": p.demand_id, "amount": p.amount, "description": p.description} for p in prices]
+    return [{
+        "price_id": p.price_id, 
+        "demand_id": p.demand_id, 
+        "amount": p.amount, 
+        "description": p.description,
+        "demand_description": p.demand.description if p.demand else "Sin demanda"
+    } for p in prices]
 
 @router.post("/prices/update")
 def update_price(data: schemas.PriceUpdate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -82,7 +93,8 @@ def update_price(data: schemas.PriceUpdate, current_user: models.User = Depends(
         description=current_price.description, # Mantenemos la descripción (Alta, Media, Baja)
         is_active=True,
         demand_id=data.demand_id
-    )
+    )   
+    logger.info(f"Precio actualizado correctamente: {new_price.amount} para el demand_id: {new_price.demand_id} desde {current_price.amount} a las {new_price.start_date} con la descripción {new_price.description}")
     
     db.add(new_price)
     db.commit()

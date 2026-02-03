@@ -20,12 +20,43 @@
         {% block content %}{% endblock %}
     </div>
 
+    <div id="toast-container"></div>
+
     <footer>
         <p>&copy; <span id="year"></span> Reserva de Pista. Todos los derechos reservados.</p>
     </footer>
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Toast Notification Logic
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Icon handling (simple unicode for now to keep it dependency-free)
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Expose to window for global access
+        window.showToast = showToast;
     </script>
 
     <script>

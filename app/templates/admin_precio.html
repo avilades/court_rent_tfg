@@ -112,19 +112,20 @@
         currentPrices.forEach(p => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="padding: 1rem;">${p.description || 'Sin descripción'}</td>
+                <td style="padding: 1rem;">${p.demand_description || p.description || 'Sin descripción'}</td>
                 <td style="padding: 1rem;">${p.amount.toFixed(2)}€</td>
-                <td style="padding: 1rem;">
-                    <button class="btn-select" onclick="selectPrice(${p.demand_id}, '${p.description}', ${p.amount})">Seleccionar</button>
+                    <button class="btn-select" onclick="selectPrice(${p.demand_id}, '${p.description}', ${p.amount}, '${p.demand_description || ''}')">Seleccionar</button>
                 </td>
             `;
             body.appendChild(row);
         });
     }
 
-    function selectPrice(demandId, description, amount) {
+    function selectPrice(demandId, description, amount, demandDescription) {
         document.getElementById('demand_id').value = demandId;
-        document.getElementById('edit-title').innerText = `Modificar Precio: ${description}`;
+        // Si hay demandDescription, usarlo. Si no, usar la description genérica.
+        const title = demandDescription ? demandDescription : description;
+        document.getElementById('edit-title').innerText = `Modificar Precio: ${title}`;
         document.getElementById('new_amount').value = amount;
 
         // Ponemos por defecto la fecha/hora actual

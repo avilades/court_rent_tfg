@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time, Float, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -133,3 +133,15 @@ class Booking(Base):
     user = relationship("User", back_populates="bookings")
     court = relationship("Court", back_populates="bookings")
     price_snapshot = relationship("Price", back_populates="bookings")
+
+    # Restricción de unicidad parcial:
+    # No puede haber dos reservas con is_cancelled=False para la misma pista y hora.
+    __table_args__ = (
+        Index(
+            "ix_active_booking",
+            "court_id",
+            "start_time",
+            unique=True,
+            postgresql_where=(is_cancelled == False)
+        ),
+    )

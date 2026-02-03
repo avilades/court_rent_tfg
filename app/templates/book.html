@@ -378,11 +378,11 @@
         });
 
         if (res.ok) {
-            alert('¡Reserva confirmada!');
+            showToast('¡Reserva confirmada!', 'success');
             loadGrid(); // Recargar el cuadrante para mostrar el hueco ocupado
         } else {
             const err = await res.json();
-            alert('Error: ' + err.detail);
+            showToast('Error: ' + err.detail, 'error');
         }
     }
 

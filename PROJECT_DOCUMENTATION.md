@@ -15,6 +15,8 @@ El proyecto está organizado de la siguiente manera:
 - `tests/reset_db.py`: Script para resetear la base de datos.
 - `.env`: Variables de entorno (secreto).
 - `.env.example`: Ejemplo de variables de entorno.
+- `Dockerfile`: Definición de la imagen Docker de la app.
+- `docker-compose.yml`: Orquestación de servicios (App + DB).
 
 ---
 
@@ -26,6 +28,7 @@ Archivo ubicado en la raíz del proyecto (no subido a git) que contiene secretos
 - `SECRET_KEY`: Clave secreta para firmar tokens JWT.
 - `ALGORITHM`: Algoritmo de encriptación (ej. HS256).
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Tiempo de expiración de la sesión.
+- `DATABASE_URL`: String de conexión a la base de datos.
 
 ### `app/conf/config.json`
 Archivo JSON para configuraciones generales de la aplicacion que pueden ser versionadas.

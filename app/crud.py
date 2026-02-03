@@ -187,26 +187,37 @@ def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: in
         return None 
     
     # 4. Crear el registro de la reserva
-    new_booking = models.Booking(
-        user_id=user_id,
-        court_id=booking_data.court_id,
-        start_time=start_dt,
-        price_id=price_id,
-        is_cancelled=False
-    )
-    db.add(new_booking)
-    db.commit()
-    logger.info(f"Booking created for user {user_id} on court {booking_data.court_id} at {booking_data.date} {booking_data.time_slot} price_id: {price_id} con un coste de {new_booking.price_snapshot.amount}")
-    db.refresh(new_booking)
-    
-    # Retornamos un diccionario con la información relevante, incluyendo el precio
-    return {
-        "booking_id": new_booking.booking_id,
-        "court_id": new_booking.court_id,
-        "start_time": new_booking.start_time,
-        "is_cancelled": new_booking.is_cancelled,
-        "price_amount": new_booking.price_snapshot.amount if new_booking.price_snapshot else None
-    }
+    try:
+        new_booking = models.Booking(
+            user_id=user_id,
+            court_id=booking_data.court_id,
+            start_time=start_dt,
+            price_id=price_id,
+            is_cancelled=False
+        )
+        db.add(new_booking)
+        db.commit()
+        logger.info(f"Booking created for user {user_id} on court {booking_data.court_id} at {booking_data.date} {booking_data.time_slot} price_id: {price_id} con un coste de {new_booking.price_snapshot.amount}")
+        db.refresh(new_booking)
+        
+        # Retornamos un diccionario con la información relevante, incluyendo el precio
+        return {
+            "booking_id": new_booking.booking_id,
+            "court_id": new_booking.court_id,
+            "start_time": new_booking.start_time,
+            "is_cancelled": new_booking.is_cancelled,
+            "price_amount": new_booking.price_snapshot.amount if new_booking.price_snapshot else None
+        }
+    except Exception as e:
+        # Si es un error de integridad (ej. clave duplicada por race condition), hacemos rollback
+        db.rollback()
+        # Verificar si es por nuestra constraint
+        if "ix_active_booking" in str(e) or "UniqueViolation" in str(e):
+            logger.warning(f"Booking conflict detected (Race Condition): {e}")
+            return None
+        # Si es otro error, lo re-lanzamos
+        logger.error(f"Database error during booking: {e}")
+        raise e
 
 def cancel_booking_logic(db: Session, booking_id: int, user_id: int):
     """

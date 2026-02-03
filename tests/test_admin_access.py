@@ -36,11 +36,17 @@ def test_admin_access():
 
     print("Testing admin API access as regular user (should be 403)...")
     # 4. Try admin API as regular user
-    response = client.post("/admin/price", 
-                          params={"price": 100, "description": "test"},
+    from datetime import datetime
+    payload = {
+        "demand_id": 1,
+        "amount": 100.0,
+        "start_date": datetime.utcnow().isoformat()
+    }
+    response = client.post("/admin/prices/update", 
+                          json=payload,
                           headers={"Authorization": f"Bearer {reg_token}"})
     assert response.status_code == 403
-    assert "Se requieren permisos de administrador" in response.json()["detail"]
+    assert "No tienes permisos" in response.json()["detail"] or "Acceso denegado" in response.json()["detail"]
 
     print("Testing login as admin...")
     # 5. Login as admin
@@ -61,8 +67,8 @@ def test_admin_access():
 
     print("Testing admin API access as admin (should be 200)...")
     # 7. Try admin API as admin
-    response = client.post("/admin/price", 
-                          params={"price": 100, "description": "test"},
+    response = client.post("/admin/prices/update", 
+                          json=payload,
                           headers={"Authorization": f"Bearer {admin_token}"})
     assert response.status_code == 200
     print("All tests passed successfully!")

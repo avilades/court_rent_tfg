@@ -49,8 +49,10 @@
             */
 
             if (response.ok) {
-                alert(' Registro exitoso! Por favor, inicia sesión.');
-                window.location.href = '/';
+                showToast('¡Registro exitoso! Redirigiendo...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
             } else {
                 const err = await response.json();
                 document.getElementById('error-msg').innerText = err.detail || 'Registro fallido';

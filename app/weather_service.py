@@ -4,13 +4,13 @@ import requests
 from datetime import datetime, date as dt_date
 import logging
 #from dotenv import load_dotenv
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from .conf.config_json import initialize_weather
 
 
 # Cargar variables de entorno desde el archivo .env si existe
-# load_dotenv()
-config = dotenv_values(".env")
+load_dotenv()
+#config = dotenv_values(".env")
 #config_json.leer_config("./app/conf/config.json")
 
 # Configuración del logger para este módulo
@@ -22,8 +22,8 @@ LATITUD = initialize_weather()[0]  # Latitud de Madrid
 LONGITUD = initialize_weather()[1] # Longitud de Madrid
 
 # Se recomienda configurar esta clave en las variables de entorno
-#OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "RANDOM")
-OPENWEATHER_API_KEY = config["OPENWEATHER_API_KEY"]
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "RANDOM")
+#OPENWEATHER_API_KEY = config["OPENWEATHER_API_KEY"]
 
 logger.info(f"OPENWEATHER_API_KEY: {OPENWEATHER_API_KEY}")
 

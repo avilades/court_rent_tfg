@@ -5,26 +5,26 @@ Desarrollada con **FastAPI**, **SQLAlchemy**, **PostgreSQL** y **Docker**.
 
 ## Prerrequisitos
 
-*   Docker Desktop instado y corriendo.
-*   VS Code con la extensión "Dev Containers".
+*   Docker y Docker Compose instalados.
 
 ## Cómo ejecutar el proyecto
 
-0.  **Configuración Inicial**:
+1.  **Configuración Inicial**:
     *   Crea un archivo `.env` en la raíz del proyecto (puedes copiar `.env.example`).
-    *   Asegúrate de que `app/conf/config.json` existe con los parámetros requeridos.
+    *   Asegúrate de configurar las variables necesarias (DATABASE_URL, etc).
 
-1.  Abre esta carpeta en VS Code.
-2.  Cuando aparezca la notificación "Folder contains a Dev Container configuration file...", haz clic en **Reopen in Container**.
-    *   Alternativamente: `F1` > `Dev Containers: Reopen in Container`.
-3.  Espera a que se construya el contenedor (la primera vez puede tardar unos minutos).
-4.  Una vez dentro, abre una terminal integrada y ejecuta:
+2.  **Arrancar con Docker**:
+    Desde la raíz del proyecto, ejecuta:
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+    ```bash
+    docker-compose up --build
+    ```
 
-5.  Abre tu navegador en: [http://localhost:8000](http://localhost:8000)
+    Esto levantará tanto la base de datos PostgreSQL como la aplicación web.
+
+3.  Abre tu navegador en: [http://localhost:8000](http://localhost:8000)
+
+
 
 ## Acceso a la Base de Datos (pgAdmin)
 
@@ -36,7 +36,7 @@ La aplicación incluye pgAdmin 4 preconfigurado para gestionar la base de datos.
     *   **Password**: `root`
 3.  Añade un nuevo servidor ("Add New Server") con los siguientes datos:
     *   **General** > **Name**: `Court Rent DB` (o el que prefieras)
-    *   **Connection** > **Host name/address**: `db`
+    *   **Connection** > **Host name/address**: `db` (o `localhost` si conectas desde fuera de docker)
     *   **Connection** > **Port**: `5432`
     *   **Connection** > **Username**: `user`
     *   **Connection** > **Password**: `password`

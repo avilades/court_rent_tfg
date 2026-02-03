@@ -83,6 +83,7 @@ def startup_event():
     Este evento se ejecuta automáticamente al arrancar el servidor.
     Se utiliza para inicializar datos maestros necesarios para que la aplicación funcione.
     """
+    
     logging.info("Iniciando eventos de arranque...")
     logging.info("Inicializando datos maestros...")
     db = next(database.get_db())
@@ -107,6 +108,7 @@ def shutdown_event():
     logging.info("Iniciando apagado")
     logging.info("Limpieza de recursos...")
     logging.info("Eventos de apagón completados.")
+    #logging.info("\n\n\n\n")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):

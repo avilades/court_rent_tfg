@@ -48,11 +48,14 @@ def setup_logging():
     logging.basicConfig(
         #level definimos el nivel de logado DEBUG, INFO, WARNING, ERROR, CRITICAL
         level=logging.DEBUG, 
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        #format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        #format="%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s -- %(levelno)s -- %(lineno)d -- %(message)s -- %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- processName: %(processName)s -- thread: %(thread)d -- threadName: %(threadName)s -- taskName: %(taskName)s -- lineNum: %(lineno)d",
+        format="%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s --levelNum: %(levelno)s --lineNum: %(lineno)d -- %(message)s -- module: %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- taskName: %(taskName)s -- lineNum: %(lineno)d",
         handlers=[
             handler
         ],
         force=True # Forzamos la configuración si ya existía una previa
     )
     
+    logging.info("\n\n\n\n")
     logging.info(f"Sistema de logs inicializado. Los archivos se guardarán en la carpeta:  {log_base}")

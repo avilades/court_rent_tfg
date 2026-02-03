@@ -7,22 +7,21 @@ from .database import get_db
 from typing import Optional
 import logging
 
-from dotenv import dotenv_values
+from dotenv import load_dotenv
+import os
 
 # Configuración del logger para este módulo
 logger = logging.getLogger(__name__)
 
 # Cargar variables de entorno desde el archivo .env si existe
-# .env no se sube al git, con lo que no lo podran ver
-# load_dotenv()
-config = dotenv_values(".env")
-logger.info(f"Configuración cargada desde .env")
+load_dotenv()
+logger.info(f"Variables de entorno cargadas")
 
 # --- Constantes de Configuración ---
 # ¡En una aplicación de producción real, estas claves deben estar en variables de entorno!
-SECRET_KEY = config["SECRET_KEY"]                                       # CAMBIAR PARA PRODUCCIÓN
-ALGORITHM = config["ALGORITHM"]                                         # Algoritmo de cifrado para el token JWT
-ACCESS_TOKEN_EXPIRE_MINUTES = int(config["ACCESS_TOKEN_EXPIRE_MINUTES"]) # Tiempo de vida del token (30 minutos)
+SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")              # CAMBIAR PARA PRODUCCIÓN
+ALGORITHM = os.getenv("ALGORITHM", "HS256")                               # Algoritmo de cifrado para el token JWT
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30)) # Tiempo de vida del token (30 minutos)
 
 # OAuth2PasswordBearer es una clase que le indica a FastAPI 
 # que el cliente enviará un token en la cabecera "Authorization" como tipo "Bearer".
