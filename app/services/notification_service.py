@@ -18,11 +18,59 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# Obtener ruta del proyecto
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname("workspace")  # Subir un nivel más para llegar a la raíz
+ENV_FILE = os.path.join(PROJECT_ROOT, '.env')
+
+
+# Cargar variables de entorno desde .env explícitamente
+try:
+    from dotenv import load_dotenv
+    if os.path.exists(ENV_FILE):
+        logger.info(f"Cargando {ENV_FILE}...")
+        # override=True asegura que se cargan incluso si ya están en el entorno
+        load_dotenv(dotenv_path=ENV_FILE, override=True)
+        logger.info("✓ .env cargado en notification_service.py")
+    else:
+        logger.warning(f"⚠️  No se encontró {ENV_FILE} al cargar notification_service.py")
+except ImportError:
+    logger.warning("⚠️  python-dotenv no está instalado. Intentando solo con variables de entorno...")
+
 # Configuración de email (se carga desde variables de entorno)
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@courtrent.com")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
+SMTP_SERVER = os.getenv("SMTP_SERVER") or "smtp1.gmail.com"
+
+# Leer el puerto de forma robusta: puede venir vacío o inválido
+_smtp_port_raw = os.getenv("SMTP_PORT")
+try:
+    if _smtp_port_raw and _smtp_port_raw.strip():
+        SMTP_PORT = int(_smtp_port_raw.strip())
+    else:
+        SMTP_PORT = 5871
+except (ValueError, TypeError):
+    SMTP_PORT = 5871
+    logger.warning(f"Valor de SMTP_PORT inválido: '{_smtp_port_raw}'. Usando 5871 por defecto.")
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL") or "noreply@courtrent.com"
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD") or ""
+
+
+# Si la contraseña viene entre comillas o contiene espacios accidentales, saneamos
+if SENDER_PASSWORD:
+    SENDER_PASSWORD = SENDER_PASSWORD.strip()
+    if (SENDER_PASSWORD.startswith('"') and SENDER_PASSWORD.endswith('"')) or (
+        SENDER_PASSWORD.startswith("'") and SENDER_PASSWORD.endswith("'")
+    ):
+        SENDER_PASSWORD = SENDER_PASSWORD[1:-1]
+
+# Log configuración SMTP al cargar el módulo
+logger.info(
+    f"SMTP Configuration loaded: "
+    f"server={SMTP_SERVER}, "
+    f"port={SMTP_PORT}, "
+    f"sender={SENDER_EMAIL}, "
+    f"password_set={bool(SENDER_PASSWORD)}"
+)
 
 
 def send_email(to_email: str, subject: str, html_content: str) -> bool:
@@ -48,6 +96,12 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
         html_part = MIMEText(html_content, "html")
         message.attach(html_part)
         
+        logger.debug(f"SMTP_SERVER: {SMTP_SERVER}")
+        logger.debug(f"SMTP_PORT: {SMTP_PORT}") 
+        logger.debug(f"SENDER_EMAIL: {SENDER_EMAIL}")
+        logger.debug(f"SENDER_PASSWORD: {SENDER_PASSWORD}")
+
+
         # Enviar email
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
@@ -57,11 +111,23 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
         logger.info(f"Email enviado exitosamente a {to_email}: {subject}")
         return True
         
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(
+            f"Error de autenticación SMTP al enviar a {to_email}. "
+            f"Verifica SENDER_EMAIL y SENDER_PASSWORD. Error: {str(e)}"
+        )
+        return False
     except smtplib.SMTPException as e:
-        logger.error(f"Error SMTP al enviar email a {to_email}: {str(e)}")
+        logger.error(
+            f"Error SMTP al enviar email a {to_email}: {str(e)}. "
+            f"Verifica SMTP_SERVER={SMTP_SERVER}, SMTP_PORT={SMTP_PORT}"
+        )
         return False
     except Exception as e:
-        logger.error(f"Error inesperado al enviar email a {to_email}: {str(e)}")
+        logger.error(
+            f"Error inesperado al enviar email a {to_email}: {type(e).__name__}: {str(e)}",
+            exc_info=True
+        )
         return False
 
 

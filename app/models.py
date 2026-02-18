@@ -169,3 +169,32 @@ class Notification(Base):
     # Relaciones
     user = relationship("User")
     booking = relationship("Booking")
+
+class ScheduledTask(Base):
+    """
+    Almacena las tareas programadas pendientes de ejecución.
+    Esto permite persistencia de tareas entre reinicios de la aplicación.
+    """
+    __tablename__ = "scheduled_tasks"
+
+    task_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    booking_id = Column(Integer, ForeignKey("bookings.booking_id"), nullable=True)
+    
+    task_type = Column(String, nullable=False)  # Tipo: 'reminder_24h', etc.
+    scheduled_for = Column(DateTime, nullable=False, index=True)  # Cuándo debo ejecutarse
+    
+    # Datos para ejecutar la tarea
+    task_data = Column(String, nullable=False)  # JSON con los datos necesarios
+    
+    is_executed = Column(Boolean, default=False)  # ¿Ya se ejecutó?
+    executed_at = Column(DateTime, nullable=True)  # Cuándo se ejecutó
+    
+    retry_count = Column(Integer, default=0)  # Veces que se intentó
+    last_error = Column(String, nullable=True)  # Último error si falló
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relaciones
+    user = relationship("User")
+    booking = relationship("Booking")

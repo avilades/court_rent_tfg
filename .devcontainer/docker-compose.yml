@@ -12,6 +12,11 @@ services:
       - db
     ports:
       - "8000:8000"
+    environment:
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
 
   db:
     image: postgres:15-alpine
@@ -34,6 +39,22 @@ services:
       PGADMIN_LISTEN_PORT: 5050
     ports:
       - "5050:5050"
+    depends_on:
+      - db
+
+  task_worker:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: python app/workers/task_worker.py 60
+    volumes:
+      - ../:/workspace:cached
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/court_rent
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
     depends_on:
       - db
 

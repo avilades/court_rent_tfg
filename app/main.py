@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 import logging
+import os
 
 from . import models, database, dependencies
 from .routers import auth, bookings, admin, users
@@ -11,6 +12,7 @@ from .logging_config import setup_logging
 from .templates import templates
 from .conf.config_json import initialize_lat_lon
 from .services.scheduler_service import init_scheduler, shutdown_scheduler
+from .services.task_service import process_pending_tasks
 initialize_lat_lon()  # Cargamos la configuración al iniciar la aplicación
 # --- Configuración Inicial ---
 
@@ -96,6 +98,27 @@ def startup_event():
     initialize_schedules(db)     # Genera el cuadrante horario semanal
     initialize_lat_lon()         # Inicializa datos para el clima
     logging.info("Datos maestros inicializados.")
+
+    # Mostrar configuración SMTP (no imprimir la contraseña, solo si está presente)
+    smtp_server = os.getenv("SMTP_SERVER", "<not-set>")
+    smtp_port = os.getenv("SMTP_PORT", "<not-set>")
+    sender_email = os.getenv("SENDER_EMAIL", "<not-set>")
+    sender_password_present = bool(os.getenv("SENDER_PASSWORD"))
+
+    logging.info(
+        f"SMTP config: server={smtp_server}, port={smtp_port}, "
+        f"sender={sender_email}, sender_password_set={sender_password_present}"
+    )
+    
+    # Procesar cualquier tarea pendiente de reinicio anterior
+    logging.info("Procesando tareas pendientes del reinicio anterior...")
+    task_stats = process_pending_tasks(db)
+    logging.info(
+        f"Tareas procesadas al startup: "
+        f"{task_stats.get('successful', 0)} exitosas, "
+        f"{task_stats.get('failed', 0)} fallidas, "
+        f"{task_stats.get('still_pending', 0)} aún pendientes"
+    )
     
     # Inicializar el scheduler de tareas programadas
     init_scheduler()

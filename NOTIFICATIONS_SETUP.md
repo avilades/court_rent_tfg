@@ -1,13 +1,22 @@
 # 📧 Sistema de Notificaciones por Email
 
+**⚡ VERSIÓN 2.0 CON SISTEMA MEJORADO DE TAREAS**
+
 Este documento explica cómo configurar y usar el sistema de notificaciones que se ha añadido a la aplicación Court Rent.
+
+**📌 IMPORTANTE**: A partir de la versión 2.0, los recordatorios automáticos usan **persistencia en base de datos** para mayor confiabilidad. Ver [TASK_SYSTEM_DEBUGGING.md](TASK_SYSTEM_DEBUGGING.md) para detalles técnicos.
+
+**ACLARACIÓN IMPORTANTE**: El proyecto contiene dos mecanismos relacionados con la programación de tareas:
+
+- El mecanismo principal y recomendado es el sistema **DB-backed** implementado en `app/services/task_service.py` que persiste tareas en la tabla `scheduled_tasks` y las procesa mediante `app/workers/task_worker.py`.
+- Existe además `app/services/scheduler_service.py` (APScheduler) que proporciona un scheduler en memoria para casos puntuales, pero la fuente de verdad para recordatorios es la tabla `scheduled_tasks`. Esta documentación asume el flujo DB-backed como opción principal.
 
 ## 📋 Descripción General
 
 El sistema de notificaciones envía emails automáticos a los usuarios en los siguientes eventos:
 
 1. **Confirmación de Reserva** - Se envía inmediatamente después de hacer una reserva
-2. **Recordatorio 24h** - Se envía automáticamente 24 horas antes de la reserva
+2. **Recordatorio 24h** - Se envía automáticamente 24 horas antes de la reserva ⭐ (Muy Mejorado)
 3. **Cancelación** - Se envía cuando el usuario cancela una reserva
 4. **Actualización de Precios** - Notifica cambios en las tarifas (uso futuro)
 
@@ -19,7 +28,9 @@ El sistema de notificaciones envía emails automáticos a los usuarios en los si
 pip install -r requirements.txt
 ```
 
-La nueva dependencia principal es **APScheduler** para programar tareas.
+Las nuevas dependencias principales son:
+- **APScheduler** - Para programar tareas
+- **psycopg2-binary** - PostgreSQL driver (ya debería estar)
 
 ### 2. Configurar Variables de Entorno
 
@@ -32,6 +43,8 @@ SMTP_PORT=587                   # Puerto SMTP
 SENDER_EMAIL=tu_email@gmail.com # Email desde el que se enviarán notificaciones
 SENDER_PASSWORD=tu_contraseña   # Contraseña de aplicación
 ```
+
+Nota: el código lee estas variables exactamente con esos nombres (`SMTP_SERVER`, `SMTP_PORT`, `SENDER_EMAIL`, `SENDER_PASSWORD`).
 
 ### 3. Configurar Gmail (Recomendado)
 
@@ -83,6 +96,7 @@ Usuario hace reserva
 4. Se registra en la BD que se intentó enviar (Notification record)
     ↓
 5. Se programa una tarea para enviar recordatorio 24h después
+    - En la implementación actual la función llamada desde el router es `schedule_reminder_task()` (DB-backed). El worker `task_worker.py` procesa las tareas guardadas en `scheduled_tasks`.
 ```
 
 ## 🚀 Flujos de Notificaciones

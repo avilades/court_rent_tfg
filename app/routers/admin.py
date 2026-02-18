@@ -319,3 +319,50 @@ def reset_user_password(data: schemas.UserPasswordReset, current_user: models.Us
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
     return {"msg": f"Contraseña del usuario {user.email} actualizada correctamente"}
+
+# ============================================================
+# ENDPOINTS PARA TAREAS PROGRAMADAS Y NOTIFICACIONES
+# ============================================================
+
+@router.post("/tasks/process")
+def process_pending_tasks(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Procesa todas las tareas programadas pendientes (recordatorios, etc).
+    
+    Este endpoint debe ser llamado periodicamente por:
+    - Un cron job externo (recomendado: cada 5-10 minutos)
+    - Un worker de Celery
+    - La aplicación misma (cada X tiempo via APScheduler)
+    
+    Solo administradores pueden acceder.
+    """
+    if not current_user.permissions.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    from ..services.task_service import process_pending_tasks
+    
+    stats = process_pending_tasks(db)
+    
+    return {
+        "message": "Tareas procesadas",
+        "statistics": stats
+    }
+
+
+@router.get("/tasks/stats")
+def get_task_statistics(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Obtiene estadísticas sobre las tareas programadas.
+    
+    Solo administradores pueden acceder.
+    """
+    if not current_user.permissions.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    from ..services.task_service import get_task_statistics
+    
+    stats = get_task_statistics(db)
+    
+    return {
+        "scheduled_tasks": stats
+    }

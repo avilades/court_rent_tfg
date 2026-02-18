@@ -8,10 +8,9 @@ from .. import weather_service
 from ..services.notification_service import (
     send_and_record_notification,
     generate_booking_confirmation_email,
-    generate_reminder_email,
     generate_cancellation_email
 )
-from ..services.scheduler_service import schedule_reminder_email, cancel_reminder
+from ..services.task_service import schedule_reminder_task, cancel_pending_task
 
 
 # inicializamos el logger
@@ -83,7 +82,8 @@ def book_court(booking: schemas.BookingCreate, current_user: models.User = Depen
         )
         
         # 4. Programar recordatorio para 24h antes
-        schedule_reminder_email(
+        schedule_reminder_task(
+            db=db,
             booking_id=new_booking['booking_id'],
             user_id=current_user.user_id,
             recipient_email=current_user.email,
@@ -225,7 +225,7 @@ def cancel_booking(booking_id: int, current_user: models.User = Depends(get_curr
         )
         
         # 4. Cancelar el recordatorio programado
-        cancel_reminder(booking_id)
+        cancel_pending_task(db, booking_id)
         
         logging.info(f"Notificación de cancelación enviada para reserva {booking_id}")
     except Exception as e:

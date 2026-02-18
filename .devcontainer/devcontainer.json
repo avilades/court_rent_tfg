@@ -5,20 +5,19 @@
     "runServices": [
         "app",
         "db",
-        "pgadmin"
+        "pgadmin",
+        "task_worker"
     ],
     "workspaceFolder": "/workspace",
-    "features": {
-        "ghcr.io/devcontainers/features/python:1.8.0": {
-            "version": "3.14"
-        }
-    },
+    "postStartCommand": "bash -lc 'echo \"SMTP config: server=$SMTP_SERVER, port=$SMTP_PORT, sender=$SENDER_EMAIL, sender_password_set=$( [ -n \"$SENDER_PASSWORD\" ] && echo true || echo false )\"'",
+    
     "customizations": {
         "vscode": {
             "extensions": [
                 "ms-python.python",
                 "ms-python.debugpy",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "google.geminicodeassist"
             ]
         }
     },

@@ -70,8 +70,36 @@ El código está organizado siguiendo las mejores prácticas de FastAPI:
 ## Documentación Detallada
 
 Para más información, consulta los siguientes documentos:
-- 📄 [PROJECT_DOCUMENTATION.md](file:///d:/GIT/court_rent_tfg/PROJECT_DOCUMENTATION.md): Detalle técnico de clases y funciones.
-- ⚡ [APPLICATION_FLOW.md](file:///d:/GIT/court_rent_tfg/APPLICATION_FLOW.md): Diagramas de flujo y recorridos de usuario.
+Para más información, consulta los siguientes documentos en este repositorio:
+- 📄 [Project documentation](PROJECT_DOCUMENTATION.md): Detalle técnico de clases y funciones.
+- ⚡ [Application flow](APPLICATION_FLOW.md): Diagramas de flujo y recorridos de usuario.
+
+## Task worker & reminders
+
+El sistema de recordatorios se persiste en la base de datos (tabla `scheduled_tasks`) y se procesa mediante un worker independiente.
+Revisa `app/services/task_service.py` y `app/workers/task_worker.py` para la implementación principal.
+
+Puedes ejecutar el worker de estas formas:
+
+```bash
+# Levantar toda la pila (recomendado):
+docker-compose up --build
+
+# Levantar solo el servicio worker (si está definido en docker-compose):
+docker-compose up task_worker
+
+# Ejecutar el worker directamente (dev):
+python app/workers/task_worker.py 60
+```
+
+Variables de entorno relevantes para el envío de emails (añadir en tu `.env`):
+
+- `SMTP_SERVER` (e.g. `smtp.gmail.com`)
+- `SMTP_PORT` (e.g. `587`)
+- `SENDER_EMAIL`
+- `SENDER_PASSWORD`
+
+Consulta `NOTIFICATIONS_SETUP.md` para más detalles de configuración.
 
 ## Usuarios de Prueba
 
