@@ -2,6 +2,8 @@ import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
+from .conf.config_json import initialize_logger_config
+initialize_logger_config()
 
 def setup_logging():
     """
@@ -47,10 +49,13 @@ def setup_logging():
     # Configuración global del logger raíz
     logging.basicConfig(
         #level definimos el nivel de logado DEBUG, INFO, WARNING, ERROR, CRITICAL
-        level=logging.DEBUG, 
+        #level=getattr(initialize_logger_config(), "LOG_LEVEL", "INFO"),
+        level=initialize_logger_config()[0],
+        #level=LOG_LEVEL if LOG_LEVEL else logging.INFO,
+        format=initialize_logger_config()[4],
         #format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         #format="%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s -- %(levelno)s -- %(lineno)d -- %(message)s -- %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- processName: %(processName)s -- thread: %(thread)d -- threadName: %(threadName)s -- taskName: %(taskName)s -- lineNum: %(lineno)d",
-        format="%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s --levelNum: %(levelno)s --lineNum: %(lineno)d -- %(message)s -- module: %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- taskName: %(taskName)s -- lineNum: %(lineno)d",
+        #format="%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s --levelNum: %(levelno)s --lineNum: %(lineno)d -- %(message)s -- module: %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- taskName: %(taskName)s -- lineNum: %(lineno)d",
         handlers=[
             handler
         ],

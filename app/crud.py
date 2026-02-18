@@ -35,7 +35,8 @@ def get_password_hash(password):
     :param password: Password en texto plano.
     :return: String con el hash generado.
     """
-    logger.info(f"Hashing password: {password}")
+    logger.debug(f"Hashing password: {password}")
+    logger.info(f"Hashing password")
     return pwd_context.hash(password)
 
 # --- User Operations ---

@@ -5,8 +5,8 @@ from datetime import datetime, date as dt_date
 import logging
 #from dotenv import load_dotenv
 from dotenv import load_dotenv
-from .conf.config_json import initialize_weather
-
+from .conf.config_json import initialize_lat_lon
+initialize_lat_lon()  # Cargamos la configuración al iniciar el módulo
 
 # Cargar variables de entorno desde el archivo .env si existe
 load_dotenv()
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 # Configuración de OpenWeatherMap
-LATITUD = initialize_weather()[0]  # Latitud de Madrid
-LONGITUD = initialize_weather()[1] # Longitud de Madrid
+LATITUD = initialize_lat_lon()[0] # Latitud 
+LONGITUD = initialize_lat_lon()[1] # Longitud
 
 # Se recomienda configurar esta clave en las variables de entorno
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "RANDOM")

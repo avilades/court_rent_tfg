@@ -3,5 +3,13 @@
     "latitud_MAD": "40.426667",
     "longitud_MAD": "-3.696111",
     "latitud": "40.474",
-    "longitud": "-3.872"
+    "longitud": "-3.872",
+    "log_config": {
+        "log_dir": "logs",
+        "log_file_name": "court_reservation.log",
+        "backup_count": 30,
+        "log_level": "INFO",
+        "log_format": "%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s --levelNum: %(levelno)s --lineNum: %(lineno)d --log: %(message)s -- module: %(module)s -- name: %(name)s -- pathname: %(pathname)s ",
+        "log_format_base": "%(asctime)s -- %(filename)s -- %(funcName)s -- %(levelname)s --levelNum: %(levelno)s --lineNum: %(lineno)d -- %(message)s -- module: %(module)s -- name: %(name)s -- pathname: %(pathname)s --process: %(process)d -- taskName: %(taskName)s -- lineNum: %(lineno)d"
+    }
 }

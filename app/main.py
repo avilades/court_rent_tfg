@@ -9,7 +9,9 @@ from .routers import auth, bookings, admin, users
 from .initialize import initialize_schedules, initialize_prices, initialize_courts, initialize_admin_user, initialize_demands
 from .logging_config import setup_logging
 from .templates import templates
-from .conf.config_json import initialize_weather
+from .conf.config_json import initialize_lat_lon
+from .services.scheduler_service import init_scheduler, shutdown_scheduler
+initialize_lat_lon()  # Cargamos la configuración al iniciar la aplicación
 # --- Configuración Inicial ---
 
 # Inicializamos el sistema de logs (registro de eventos)
@@ -92,8 +94,12 @@ def startup_event():
     initialize_prices(db)        # Inicializa precios base
     initialize_courts(db)        # Crea las pistas si no existen
     initialize_schedules(db)     # Genera el cuadrante horario semanal
-    initialize_weather() # Inicializa el clima
+    initialize_lat_lon()         # Inicializa datos para el clima
     logging.info("Datos maestros inicializados.")
+    
+    # Inicializar el scheduler de tareas programadas
+    init_scheduler()
+    logging.info("Sistemas de notificación inicializados.")
 
 # --- Rutas del Frontend (Servicio de HTML) ---
 # Estas rutas devuelven páginas web completas en lugar de solo datos JSON.
@@ -107,6 +113,10 @@ def shutdown_event():
     """
     logging.info("Iniciando apagado")
     logging.info("Limpieza de recursos...")
+    
+    # Detener el scheduler
+    shutdown_scheduler()
+    
     logging.info("Eventos de apagón completados.")
     #logging.info("\n\n\n\n")
 

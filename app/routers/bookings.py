@@ -5,6 +5,13 @@ from typing import List
 from .. import crud, schemas, models
 from ..dependencies import get_db, get_current_user
 from .. import weather_service
+from ..services.notification_service import (
+    send_and_record_notification,
+    generate_booking_confirmation_email,
+    generate_reminder_email,
+    generate_cancellation_email
+)
+from ..services.scheduler_service import schedule_reminder_email, cancel_reminder
 
 
 # inicializamos el logger
@@ -37,6 +44,7 @@ def book_court(booking: schemas.BookingCreate, current_user: models.User = Depen
     """
     Realiza una nueva reserva de pista.
     Verifica los permisos del usuario y posibles conflictos de horario.
+    Envía notificaciones: confirmación y programa recordatorio 24h antes.
     """
     # 1. Verificar si el usuario tiene permiso para alquilar
     if not current_user.permissions.can_rent:
@@ -48,6 +56,44 @@ def book_court(booking: schemas.BookingCreate, current_user: models.User = Depen
          raise HTTPException(status_code=409, detail="El horario seleccionado ya está ocupado")
     
     logging.info(f"Reserva creada: Usuario={current_user.email}, Pista={new_booking['court_id']}, Fecha={new_booking['start_time'].date()}, Hora={new_booking['start_time'].strftime('%H:%M')}")
+    
+    # 3. Enviar notificación de confirmación
+    try:
+        from datetime import datetime as dt, timedelta
+        start_datetime = new_booking['start_time']
+        end_datetime = start_datetime + timedelta(minutes=90)
+        price = new_booking.get('price_amount', 0)
+        
+        html_content = generate_booking_confirmation_email(
+            user_name=current_user.name,
+            court_number=new_booking['court_id'],
+            start_time=start_datetime.strftime("%d/%m/%Y %H:%M"),
+            end_time=end_datetime.strftime("%H:%M"),
+            price=price
+        )
+        
+        send_and_record_notification(
+            db=db,
+            user_id=current_user.user_id,
+            recipient_email=current_user.email,
+            notification_type="booking_confirmation",
+            subject=f"✓ Reserva Confirmada - Pista {new_booking['court_id']}",
+            html_content=html_content,
+            booking_id=new_booking['booking_id']
+        )
+        
+        # 4. Programar recordatorio para 24h antes
+        schedule_reminder_email(
+            booking_id=new_booking['booking_id'],
+            user_id=current_user.user_id,
+            recipient_email=current_user.email,
+            court_number=new_booking['court_id'],
+            start_time=start_datetime
+        )
+        
+        logging.info(f"Notificaciones enviadas para reserva {new_booking['booking_id']}")
+    except Exception as e:
+        logging.error(f"Error al enviar notificaciones para reserva {new_booking['booking_id']}: {str(e)}")
     
     return new_booking
 
@@ -140,12 +186,50 @@ def cancel_booking(booking_id: int, current_user: models.User = Depends(get_curr
     """
     Cancela una reserva existente.
     Verifica que el usuario sea el propietario de la reserva.
+    Envía notificación de cancelación y cancela cualquier recordatorio programado.
     """
+    # 1. Obtener la reserva antes de cancelarla para enviar notificación
+    booking_record = db.query(models.Booking).filter(models.Booking.booking_id == booking_id).first()
+    if not booking_record or booking_record.user_id != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada o no estás autorizado")
+    
+    # Guardar información para la notificación
+    court_number = booking_record.court_id
+    start_time = booking_record.start_time
+    price_amount = booking_record.price_snapshot.amount if booking_record.price_snapshot else 0
+    
+    # 2. Cancelar la reserva en la BD
     booking = crud.cancel_booking_logic(db, booking_id, current_user.user_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Reserva no encontrada o no estás autorizado")
     
     logging.info(f"Reserva cancelada: ID={booking_id}, Usuario={current_user.email}")
+    
+    # 3. Enviar notificación de cancelación
+    try:
+        html_content = generate_cancellation_email(
+            user_name=current_user.name,
+            court_number=court_number,
+            start_time=start_time.strftime("%d/%m/%Y %H:%M"),
+            refund_amount=price_amount
+        )
+        
+        send_and_record_notification(
+            db=db,
+            user_id=current_user.user_id,
+            recipient_email=current_user.email,
+            notification_type="cancellation",
+            subject=f"✗ Reserva Cancelada - Pista {court_number}",
+            html_content=html_content,
+            booking_id=booking_id
+        )
+        
+        # 4. Cancelar el recordatorio programado
+        cancel_reminder(booking_id)
+        
+        logging.info(f"Notificación de cancelación enviada para reserva {booking_id}")
+    except Exception as e:
+        logging.error(f"Error al enviar notificación de cancelación para reserva {booking_id}: {str(e)}")
     
     return {"msg": "Reserva cancelada correctamente"}
 

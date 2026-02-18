@@ -145,3 +145,27 @@ class Booking(Base):
             postgresql_where=(is_cancelled == False)
         ),
     )
+class Notification(Base):
+    """
+    Almacena el historial de notificaciones enviadas a los usuarios.
+    Registra todos los eventos de notificación (confirmación, recordatorio, cancelación, etc).
+    """
+    __tablename__ = "notifications"
+
+    notification_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    booking_id = Column(Integer, ForeignKey("bookings.booking_id"), nullable=True) # Puede ser NULL para notificaciones generales
+    
+    notification_type = Column(String, nullable=False)  # Tipo: 'booking_confirmation', 'reminder_24h', 'cancellation', 'price_update', etc.
+    subject = Column(String, nullable=False)            # Asunto del email
+    content = Column(String, nullable=False)            # Body/contenido del email
+    recipient_email = Column(String, nullable=False)    # Email del destinatario (desnormalizado para referencia)
+    
+    is_sent = Column(Boolean, default=False)            # ¿Fue enviado exitosamente?
+    sent_at = Column(DateTime, nullable=True)           # Cuándo se envió
+    created_at = Column(DateTime, default=datetime.utcnow) # Cuándo se creó el registro
+    scheduled_for = Column(DateTime, nullable=True)     # Fecha/hora en la que se debe enviar (para tareas programadas)
+    
+    # Relaciones
+    user = relationship("User")
+    booking = relationship("Booking")

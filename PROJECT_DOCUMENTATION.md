@@ -109,7 +109,7 @@ Servicio encargado de la integración con la API de OpenWeatherMap.
 - **Funciones:**
     - `get_weather_prediction(date_str)`: Obtiene la predicción del clima para una fecha dada.
     - `_get_mock_weather(target_date)`: Genera datos simulados si la API falla o no hay key.
-    - `initialize_weather()`: Carga configuración inicial desde `app/conf/config.json`.
+    - `initialize_config()`: Carga configuración inicial desde `app/conf/config.json`.
 
 ### `initialize.py`
 Script de inicialización de datos base para la aplicación (semilla de datos).
