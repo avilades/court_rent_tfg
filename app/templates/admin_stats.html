@@ -1,63 +1,148 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card" style="max-width: 1000px; margin: 0 auto;">
+<div class="card" style="max-width: 1200px; margin: 0 auto;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
-            <h2 style="margin: 0;">Panel de Analíticas</h2>
-            <p style="color: #666; margin: 5px 0 0 0;">Información de uso e ingresos de las instalaciones</p>
+            <h2 style="margin: 0;">📊 Panel de Analíticas Avanzado</h2>
+            <p style="color: #666; margin: 5px 0 0 0;">Comparativas, tendencias, heatmap y KPIs en tiempo real</p>
         </div>
-        <a href="/admin" class="back-link">← Volver al Admin</a>
+        <div style="display: flex; gap: 1rem;">
+            <button id="export-csv-btn" class="btn" style="background: #28a745; color: white;">📥 Descargar CSV</button>
+            <a href="/admin" class="back-link">← Volver</a>
+        </div>
+    </div>
+
+    <!-- FILTRO DE FECHAS -->
+    <div class="filter-box">
+        <label>Período:</label>
+        <select id="period-select" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="30">Últimos 30 días</option>
+            <option value="60">Últimos 60 días</option>
+            <option value="90">Últimos 90 días</option>
+        </select>
     </div>
 
     <div id="loading" class="text-center" style="padding: 3rem;">
-        <p>Calculando estadísticas...</p>
+        <p>⏳ Cargando estadísticas...</p>
     </div>
 
     <div id="stats-content" style="display: none;">
-        <!-- Resumen Rápido -->
+        <!-- ALERTAS INTELIGENTES -->
+        <div id="alerts-container" style="margin-bottom: 2rem;"></div>
+
+        <!-- RESUMEN RÁPIDO CON COMPARATIVAS -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-label">Reservas (30 días)</span>
+                <span class="stat-label">Reservas (período)</span>
                 <span class="stat-value" id="total-bookings">-</span>
+                <span class="stat-variation" id="booking-var">-</span>
             </div>
             <div class="stat-card primario">
                 <span class="stat-label">Ingresos Totales</span>
                 <span class="stat-value" id="total-income">-€</span>
+                <span class="stat-variation" id="income-var">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ticket Medio</span>
+                <span class="stat-value" id="avg-ticket">-€</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ocupación Promedio</span>
+                <span class="stat-value" id="avg-occupancy">-</span>
             </div>
             <div class="stat-card alert-card">
                 <span class="stat-label">Tasa de Cancelación</span>
-                <span class="stat-value" id="cancellation-rate">- %</span>
+                <span class="stat-value" id="cancellation-rate">-%</span>
             </div>
         </div>
 
-        <!-- Business Insights -->
+        <!-- GRÁFICO DE TENDENCIAS -->
+        <div class="section-card" style="margin-top: 2rem;">
+            <h3>📈 Tendencia de Ingresos (Últimos 30 días)</h3>
+            <canvas id="trend-chart" height="80"></canvas>
+        </div>
+
+        <!-- DOS COLUMNAS: OCUPACIÓN Y DEMANDA -->
         <div class="insights-container">
-            <!-- Columna Izquierda: Ocupación y Picos -->
             <div class="insight-column">
-                <h3>Uso por Pista</h3>
+                <h3>💼 Ocupación por Pista</h3>
                 <div id="court-stats-container" class="court-bars text-small"></div>
 
-                <h3 style="margin-top: 2rem;">Horas Punta (Top 3)</h3>
+                <h3 style="margin-top: 2rem;">⏰ Horas Punta (Top 3)</h3>
                 <div id="peak-hours-container" class="simple-list"></div>
             </div>
 
-            <!-- Columna Derecha: Ingresos y Usuarios -->
             <div class="insight-column">
-                <h3>Ingresos por Demanda</h3>
-                <div id="income-demand-container" class="court-bars text-small"></div>
+                <h3>💰 Ingresos por Demanda</h3>
+                <canvas id="demand-chart" height="100"></canvas>
 
-                <h3 style="margin-top: 2rem;">Top 5 Usuarios Fieles</h3>
+                <h3 style="margin-top: 2rem;">👥 Top 5 Usuarios Fieles</h3>
                 <ul id="top-users-list" class="user-list"></ul>
             </div>
+        </div>
+
+        <!-- HEATMAP DE OCUPACIÓN -->
+        <div class="section-card" style="margin-top: 2rem;">
+            <h3>🔥 Heatmap: Ocupación por Pista y Hora</h3>
+            <div id="heatmap-container" class="heatmap-container"></div>
+            <p style="font-size: 0.85rem; color: #888; margin-top: 1rem;">Los colores más intensos indican mayor ocupación. Usa esto para identificar franjas horarias saturadas o vacías.</p>
         </div>
     </div>
 </div>
 
 <style>
+    .filter-box {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .filter-box label {
+        font-weight: 500;
+    }
+
+    .alert-box {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+    }
+
+    .alert-icon {
+        font-size: 1.5rem;
+        min-width: 30px;
+        text-align: center;
+    }
+
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1.5rem;
     }
 
@@ -78,9 +163,10 @@
     }
 
     .stat-label {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         opacity: 0.8;
         margin-bottom: 0.5rem;
+        text-transform: uppercase;
     }
 
     .stat-value {
@@ -88,10 +174,36 @@
         font-weight: 700;
     }
 
+    .stat-variation {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        font-weight: 600;
+    }
+
+    .stat-variation.up {
+        color: #28a745;
+    }
+
+    .stat-variation.down {
+        color: #dc3545;
+    }
+
+    .stat-variation.neutral {
+        color: #6c757d;
+    }
+
+    .section-card {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid #eee;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
     .court-bars {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.2rem;
         margin-top: 1rem;
     }
 
@@ -107,17 +219,17 @@
     }
 
     .bar-outer {
-        height: 12px;
+        height: 14px;
         background: #e9ecef;
-        border-radius: 6px;
+        border-radius: 7px;
         overflow: hidden;
     }
 
     .bar-inner {
         height: 100%;
-        background: #007bff;
-        border-radius: 6px;
-        transition: width 1s ease-out;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        border-radius: 7px;
+        transition: width 0.8s ease-out;
     }
 
     .text-center {
@@ -147,16 +259,18 @@
 
     .simple-list {
         display: flex;
-        gap: 1rem;
+        gap: 0.8rem;
         flex-wrap: wrap;
+        margin-top: 1rem;
     }
 
     .peak-hour-badge {
-        background: #e2e6ea;
-        padding: 0.5rem 1rem;
+        background: #e7f3ff;
+        padding: 0.6rem 1rem;
         border-radius: 20px;
         font-weight: bold;
-        color: #495057;
+        color: #0066cc;
+        font-size: 0.9rem;
     }
 
     .user-list {
@@ -180,38 +294,339 @@
     .user-count {
         background: #d4edda;
         color: #155724;
-        padding: 2px 8px;
-        border-radius: 10px;
+        padding: 4px 10px;
+        border-radius: 12px;
         font-size: 0.8rem;
         font-weight: bold;
     }
+
+    /* HEATMAP STYLES */
+    .heatmap-container {
+        overflow-x: auto;
+        margin-top: 1rem;
+    }
+
+    .heatmap-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+    .heatmap-table th, .heatmap-table td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .heatmap-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .heatmap-table td {
+        position: relative;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .heatmap-cell {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+    }
+
+    .insight-column {
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #eee;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
 </style>
 
+<!-- Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
 <script>
-    async function loadStats() {
-        const token = localStorage.getItem('token');
+    let statsData = null;
+    let trendChart = null;
+    let demandChart = null;
+    const token = localStorage.getItem('token');
+    let currentPeriod = 30;
+
+    async function loadStats(period = 30) {
+        currentPeriod = period;
         try {
-            const res = await fetch('/admin/stats-data', {
+            const res = await fetch(`/admin/stats-data?period=${period}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
-                const data = await res.json();
-                document.getElementById('total-bookings').textContent = data.total_bookings_30d;
-                document.getElementById('total-income').textContent = data.total_income + '€';
-                document.getElementById('cancellation-rate').textContent = data.cancellation_rate + '%';
-
-                renderCourtBars(data.court_occupancy);
-                renderDemandBars(data.income_by_demand);
-                renderPeakHours(data.peak_hours);
-                renderTopUsers(data.top_users);
-
+                statsData = await res.json();
+                renderStats();
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('stats-content').style.display = 'block';
             }
         } catch (error) {
             console.error('Error:', error);
         }
+    }
+
+    // Event listener para el filtro de períodos
+    document.getElementById('period-select').addEventListener('change', (e) => {
+        const period = parseInt(e.target.value);
+        document.getElementById('stats-content').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        loadStats(period);
+    });
+
+    function renderStats() {
+        if (!statsData) return;
+
+        // KPIs principales
+        document.getElementById('total-bookings').textContent = statsData.total_bookings_30d;
+        document.getElementById('total-income').textContent = statsData.total_income + '€';
+        document.getElementById('cancellation-rate').textContent = statsData.cancellation_rate + '%';
+        document.getElementById('avg-ticket').textContent = statsData.avg_ticket + '€';
+        document.getElementById('avg-occupancy').textContent = statsData.avg_occupancy + '%';
+
+        // Comparativas
+        const bookingVar = statsData.booking_variation;
+        const incomeVar = statsData.income_variation;
+        const bookingVarEl = document.getElementById('booking-var');
+        const incomeVarEl = document.getElementById('income-var');
+
+        const formatVar = (val) => {
+            if (val > 0) return `(↑${val}% vs periodo anterior)`;
+            if (val < 0) return `(↓${Math.abs(val)}% vs periodo anterior)`;
+            return '(→ sin cambios)';
+        };
+
+        bookingVarEl.textContent = formatVar(bookingVar);
+        bookingVarEl.className = 'stat-variation ' + (bookingVar > 0 ? 'up' : (bookingVar < 0 ? 'down' : 'neutral'));
+        
+        incomeVarEl.textContent = formatVar(incomeVar);
+        incomeVarEl.className = 'stat-variation ' + (incomeVar > 0 ? 'up' : (incomeVar < 0 ? 'down' : 'neutral'));
+
+        // Alertas
+        renderAlerts();
+
+        // Gráficos y tablas
+        renderCourtBars(statsData.court_occupancy);
+        renderDemandChart(statsData.income_by_demand);
+        renderPeakHours(statsData.peak_hours);
+        renderTopUsers(statsData.top_users);
+        renderTrendChart();
+        renderHeatmap();
+    }
+
+    function renderAlerts() {
+        const container = document.getElementById('alerts-container');
+        container.innerHTML = '';
+        const alerts = [];
+
+        // Alerta: Ocupación baja
+        if (statsData.avg_occupancy < 30) {
+            alerts.push({
+                type: 'warning',
+                icon: '⚠️',
+                text: `⚠️ Ocupación baja (${statsData.avg_occupancy}%). Considera promociones o reducir horarios.`
+            });
+        }
+
+        // Alerta: Cancelación alta
+        if (statsData.cancellation_rate > 20) {
+            alerts.push({
+                type: 'danger',
+                icon: '❌',
+                text: `❌ Tasa de cancelación alta (${statsData.cancellation_rate}%). Revisa políticas o plazos.`
+            });
+        }
+
+        // Alerta: Ingresos en baja
+        if (statsData.income_variation < -10) {
+            alerts.push({
+                type: 'danger',
+                icon: '📉',
+                text: `📉 Ingresos en baja (${statsData.income_variation}%). Considera ajuste de precios o promociones.`
+            });
+        }
+
+        // Éxito: Crecimiento
+        if (statsData.income_variation > 20) {
+            alerts.push({
+                type: 'success',
+                icon: '✅',
+                text: `✅ ¡Excelente! Ingresos en alza (${statsData.income_variation}%).`
+            });
+        }
+
+        // Alerta: Pistas subutilizadas
+        if (statsData.underutilized_courts && statsData.underutilized_courts.length > 0) {
+            alerts.push({
+                type: 'warning',
+                icon: '🏌️',
+                text: `🏌️ Pistas subutilizadas: ${statsData.underutilized_courts.map(c => 'Pista ' + c).join(', ')}. Considera mantenimiento o cambios.`
+            });
+        }
+
+        // Alerta: Ticket bajo
+        if (statsData.avg_ticket < 25) {
+            alerts.push({
+                type: 'warning',
+                icon: '💰',
+                text: `💰 Ticket medio bajo (${statsData.avg_ticket}€). Considera aumentar precios en demanda alta.`
+            });
+        }
+
+        alerts.forEach(alert => {
+            const div = document.createElement('div');
+            div.className = `alert-box alert-${alert.type}`;
+            div.innerHTML = `<span class="alert-icon">${alert.icon}</span><span>${alert.text}</span>`;
+            container.appendChild(div);
+        });
+    }
+
+    function renderTrendChart() {
+        const ctx = document.getElementById('trend-chart').getContext('2d');
+        
+        const dates = Object.keys(statsData.daily_income_trend).slice(-currentPeriod);
+        const incomes = Object.values(statsData.daily_income_trend).slice(-currentPeriod);
+
+        if (trendChart) trendChart.destroy();
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates.map(d => d.substring(5)),
+                datasets: [{
+                    label: 'Ingresos Diarios (€)',
+                    data: incomes,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#007bff',
+                    pointHoverBackgroundColor: '#0056b3',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: val => val + '€' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderDemandChart(demands) {
+        const ctx = document.getElementById('demand-chart');
+        if (!ctx) return;
+        
+        const demandCtx = ctx.getContext('2d');
+        
+        if (demandChart) demandChart.destroy();
+
+        demandChart = new Chart(demandCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(demands),
+                datasets: [{
+                    label: 'Ingresos por Demanda (€)',
+                    data: Object.values(demands),
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                    borderColor: ['#155724', '#856404', '#721c24'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    x: {
+                        ticks: { callback: val => val + '€' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderHeatmap() {
+        const container = document.getElementById('heatmap-container');
+        const heatmap = statsData.occupancy_by_hour_and_court;
+        
+        if (!heatmap || Object.keys(heatmap).length === 0) {
+            container.innerHTML = '<p class="text-small">Sin datos suficientes</p>';
+            return;
+        }
+
+        let maxValue = 1;
+        Object.values(heatmap).forEach(court => {
+            Object.values(court).forEach(count => {
+                if (count > maxValue) maxValue = count;
+            });
+        });
+
+        let html = '<table class="heatmap-table"><tr><th>Hora</th>';
+        Object.keys(heatmap).forEach(court => {
+            html += `<th>${court}</th>`;
+        });
+        html += '</tr>';
+
+        for (let hour = 8; hour <= 21; hour++) {
+            html += `<tr><td><strong>${hour}:00</strong></td>`;
+            Object.keys(heatmap).forEach(court => {
+                const count = heatmap[court][hour] || 0;
+                const intensity = (count / maxValue);
+                const hue = 200 - (intensity * 80); // Azul a rojo
+                const color = `hsl(${hue}, 100%, ${90 - intensity * 50}%)`;
+                html += `<td style="background-color: ${color}; font-weight: bold;">${count}</td>`;
+            });
+            html += '</tr>';
+        }
+        html += '</table>';
+
+        // Agregar leyenda
+        html += '<div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">';
+        html += '<span>Leyenda:</span>';
+        for (let i = 0; i <= 100; i += 25) {
+            const intensity = i / 100;
+            const hue = 200 - (intensity * 80);
+            const color = `hsl(${hue}, 100%, ${90 - intensity * 50}%)`;
+            html += `<div style="display: flex; align-items: center; gap: 0.3rem;"><div style="width: 20px; height: 20px; background-color: ${color}; border: 1px solid #ccc; border-radius: 3px;"></div><span style="font-size: 0.8rem;">${Math.round(i)}%</span></div>`;
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
     }
 
     function renderCourtBars(courts) {
@@ -223,18 +638,6 @@
         Object.entries(courts).forEach(([name, count]) => {
             const percentage = (count / max) * 100;
             createBar(container, name, `${count} reservas`, percentage);
-        });
-    }
-
-    function renderDemandBars(demands) {
-        const container = document.getElementById('income-demand-container');
-        container.innerHTML = '';
-        const values = Object.values(demands);
-        const max = Math.max(...values, 1);
-
-        Object.entries(demands).forEach(([name, income]) => {
-            const percentage = (income / max) * 100;
-            createBar(container, name, `${income}€`, percentage, '#28a745');
         });
     }
 
@@ -256,19 +659,25 @@
 
     function renderPeakHours(hours) {
         const container = document.getElementById('peak-hours-container');
-        if (hours.length === 0) { container.innerHTML = '<p class="text-small">Sin datos suficientes</p>'; return; }
+        if (!hours || hours.length === 0) { 
+            container.innerHTML = '<p class="text-small">Sin datos suficientes</p>'; 
+            return; 
+        }
 
         hours.forEach(h => {
             const badge = document.createElement('div');
             badge.className = 'peak-hour-badge';
-            badge.textContent = `${h.hour}:00 - ${h.hour}:59 (${h.count} res.)`;
+            badge.textContent = `${String(h.hour).padStart(2, '0')}:00 - ${String(h.hour).padStart(2, '0')}:59 (${h.count} res.)`;
             container.appendChild(badge);
         });
     }
 
     function renderTopUsers(users) {
         const list = document.getElementById('top-users-list');
-        if (users.length === 0) { list.innerHTML = '<li class="text-small">Sin datos suficientes</li>'; return; }
+        if (!users || users.length === 0) { 
+            list.innerHTML = '<li class="text-small">Sin datos suficientes</li>'; 
+            return; 
+        }
 
         users.forEach(u => {
             const li = document.createElement('li');
@@ -283,15 +692,59 @@
         });
     }
 
+    // EXPORT CSV
+    document.getElementById('export-csv-btn').addEventListener('click', () => {
+        if (!statsData) return;
+
+        let csv = 'ESTADÍSTICAS DE RESERVA\n\n';
+        csv += `Fecha de generación,${new Date().toLocaleString()}\n`;
+        csv += `Período,${currentPeriod} días\n\n`;
+        csv += `KPI,Valor\n`;
+        csv += `Reservas,${statsData.total_bookings_30d}\n`;
+        csv += `Ingresos Totales,${statsData.total_income}€\n`;
+        csv += `Ticket Medio,${statsData.avg_ticket}€\n`;
+        csv += `Ocupación Promedio,${statsData.avg_occupancy}%\n`;
+        csv += `Tasa de Cancelación,${statsData.cancellation_rate}%\n`;
+        csv += `Variación Reservas,${statsData.booking_variation}%\n`;
+        csv += `Variación Ingresos,${statsData.income_variation}%\n\n`;
+
+        csv += 'OCUPACIÓN POR PISTA\n';
+        csv += 'Pista,Reservas\n';
+        Object.entries(statsData.court_occupancy).forEach(([court, count]) => {
+            csv += `${court},${count}\n`;
+        });
+
+        csv += '\nINGRESOS POR DEMANDA\n';
+        csv += 'Demanda,Ingresos\n';
+        Object.entries(statsData.income_by_demand).forEach(([demand, income]) => {
+            csv += `${demand},${income}€\n`;
+        });
+
+        csv += '\nTOP USUARIOS\n';
+        csv += 'Usuario,Email,Reservas\n';
+        statsData.top_users.forEach(u => {
+            csv += `${u.name},${u.email},${u.count}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=UTF-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `stats_${currentPeriod}d_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
     // Seguridad básica frontal
     async function checkAdmin() {
-        const token = localStorage.getItem('token');
         if (!token) { window.location.href = '/'; return; }
         const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) {
             const user = await res.json();
             if (!user.permissions || !user.permissions.is_admin) window.location.href = '/dashboard';
-            else loadStats();
+            else loadStats(30);
         } else window.location.href = '/';
     }
 

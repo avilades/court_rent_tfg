@@ -103,41 +103,76 @@ def update_price(data: schemas.PriceUpdate, current_user: models.User = Depends(
     return {"msg": "Precio actualizado correctamente", "new_price_id": new_price.price_id}
 
 @router.get("/stats-data")
-def get_stats(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_stats(period: int = 30, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    Calcula estadísticas de uso e ingresos.
+    Calcula estadísticas avanzadas de uso e ingresos: comparativas, tendencias, heatmap de ocupación, KPIs.
+    
+    Args:
+        period: Número de días a considerar (30, 60, 90 por defecto 30)
     """
     if not current_user.permissions.is_admin:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
-    from sqlalchemy import func, desc, extract, cast, Integer
+    from sqlalchemy import func, desc, extract, cast, Integer, Date
     from datetime import datetime, timedelta
 
-    # 1. Tasa de ocupación (Últimos 30 días)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    total_bookings = db.query(models.Booking).filter(
-        models.Booking.start_time >= thirty_days_ago,
+    # Validar periodo
+    if period not in [30, 60, 90]:
+        period = 30
+
+    now = datetime.utcnow()
+    period_start = now - timedelta(days=period)
+    previous_period_start = now - timedelta(days=period * 2)
+    previous_period_end = period_start
+
+    # === PERÍODO ACTUAL ===
+    current_bookings = db.query(models.Booking).filter(
+        models.Booking.start_time >= period_start,
         models.Booking.is_cancelled == False
     ).count()
 
-    # 1.1 Tasa de Cancelación (Global)
+    current_income = db.query(
+        func.sum(models.Price.amount)
+    ).join(
+        models.Booking, models.Booking.price_id == models.Price.price_id
+    ).filter(
+        models.Booking.start_time >= period_start,
+        models.Booking.is_cancelled == False
+    ).scalar() or 0.0
+
+    # === PERÍODO ANTERIOR ===
+    previous_bookings = db.query(models.Booking).filter(
+        models.Booking.start_time >= previous_period_start,
+        models.Booking.start_time < previous_period_end,
+        models.Booking.is_cancelled == False
+    ).count()
+
+    previous_income = db.query(
+        func.sum(models.Price.amount)
+    ).join(
+        models.Booking, models.Booking.price_id == models.Price.price_id
+    ).filter(
+        models.Booking.start_time >= previous_period_start,
+        models.Booking.start_time < previous_period_end,
+        models.Booking.is_cancelled == False
+    ).scalar() or 0.0
+
+    # Calcular variaciones porcentuales
+    booking_variation = 0.0
+    income_variation = 0.0
+    if previous_bookings > 0:
+        booking_variation = round(((current_bookings - previous_bookings) / previous_bookings) * 100, 1)
+    if previous_income > 0:
+        income_variation = round(((current_income - previous_income) / previous_income) * 100, 1)
+
+    # === TASA DE CANCELACIÓN ===
     total_all_time = db.query(models.Booking).count()
     total_cancelled = db.query(models.Booking).filter(models.Booking.is_cancelled == True).count()
     cancellation_rate = 0.0
     if total_all_time > 0:
         cancellation_rate = round((total_cancelled / total_all_time) * 100, 1)
-    
-    # 2. Ingresos totales (Agrupados por mes)
-    income_by_price = db.query(
-        func.sum(models.Price.amount)
-    ).join(
-        models.Booking, models.Booking.price_id == models.Price.price_id
-    ).filter(
-        models.Booking.is_cancelled == False
-    ).scalar() or 0.0
 
-    # 2.1 Ingresos por Tipo de Demanda
-    # Join: Price -> Demand
+    # === INGRESOS POR DEMANDA ===
     income_by_demand_query = db.query(
         models.Demand.description,
         func.sum(models.Price.amount)
@@ -146,32 +181,34 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
     ).join(
         models.Demand, models.Price.demand_id == models.Demand.demand_id
     ).filter(
+        models.Booking.start_time >= period_start,
         models.Booking.is_cancelled == False
     ).group_by(models.Demand.description).all()
 
-    income_by_demand = {desc: round(amount, 2) for desc, amount in income_by_demand_query}
+    income_by_demand = {desc: round(amount or 0, 2) for desc, amount in income_by_demand_query}
 
-    # 3. Ocupación por pista
+    # === OCUPACIÓN POR PISTA ===
     occupancy_by_court = db.query(
         models.Booking.court_id, func.count(models.Booking.booking_id)
     ).filter(
+        models.Booking.start_time >= period_start,
         models.Booking.is_cancelled == False
     ).group_by(models.Booking.court_id).all()
     
     court_stats = {f"Pista {c_id}": count for c_id, count in occupancy_by_court}
 
-    # 4. Horas Punta (Top 3 horas más reservadas)
-    # Extract hour from start_time
+    # === HORAS PUNTA ===
     peak_hours_query = db.query(
         extract('hour', models.Booking.start_time).label('hour'),
         func.count(models.Booking.booking_id).label('count')
     ).filter(
+        models.Booking.start_time >= period_start,
         models.Booking.is_cancelled == False
     ).group_by('hour').order_by(desc('count')).limit(3).all()
 
     peak_hours = [{"hour": int(h), "count": c} for h, c in peak_hours_query]
 
-    # 5. Top Usuarios (Top 5)
+    # === TOP USUARIOS ===
     top_users_query = db.query(
         models.User.email,
         models.User.name,
@@ -180,6 +217,7 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
     ).join(
         models.Booking, models.Booking.user_id == models.User.user_id
     ).filter(
+        models.Booking.start_time >= period_start,
         models.Booking.is_cancelled == False
     ).group_by(models.User.user_id).order_by(desc('count')).limit(5).all()
 
@@ -188,14 +226,91 @@ def get_stats(current_user: models.User = Depends(get_current_user), db: Session
         for u in top_users_query
     ]
 
+    # === DATOS DIARIOS (TENDENCIA) ===
+    daily_data = db.query(
+        cast(models.Booking.start_time, Date).label('date'),
+        func.sum(models.Price.amount).label('daily_income'),
+        func.count(models.Booking.booking_id).label('daily_bookings')
+    ).join(
+        models.Price, models.Booking.price_id == models.Price.price_id
+    ).filter(
+        models.Booking.start_time >= period_start,
+        models.Booking.is_cancelled == False
+    ).group_by(cast(models.Booking.start_time, Date)).all()
+
+    # Procesar datos diarios por fecha
+    daily_income_trend = {}
+    for i in range(period, 0, -1):
+        date = (now - timedelta(days=i)).date().isoformat()
+        daily_income_trend[date] = 0.0
+    
+    daily_bookings_trend = {k: 0 for k in daily_income_trend.keys()}
+    
+    # === OCUPACIÓN POR PISTA Y HORA (HEATMAP) ===
+    occupancy_matrix = db.query(
+        models.Booking.court_id,
+        extract('hour', models.Booking.start_time).label('hour'),
+        func.count(models.Booking.booking_id).label('count')
+    ).filter(
+        models.Booking.start_time >= period_start,
+        models.Booking.is_cancelled == False
+    ).group_by(models.Booking.court_id, 'hour').all()
+
+    # Estructura: {"Pista 1": {8: 2, 9: 5, ...}, ...}
+    heatmap = {}
+    for court_id, hour, count in occupancy_matrix:
+        court_label = f"Pista {court_id}"
+        if court_label not in heatmap:
+            heatmap[court_label] = {}
+        heatmap[court_label][int(hour)] = count
+
+    # === MÉTRICAS KPI ===
+    total_slots = 30 * 9 * len(set([c[0] for c in occupancy_by_court])) if occupancy_by_court else 1  # Aprox.
+    avg_occupancy = round((current_bookings / total_slots) * 100, 1) if total_slots > 0 else 0.0
+    avg_ticket = round(current_income / max(current_bookings, 1), 2)
+
+    # === PISTAS MENOS USADAS (ALERTAS) ===
+    all_courts = db.query(models.Court).all()
+    court_usage = {c.court_id: 0 for c in all_courts}
+    for court_id, count in occupancy_by_court:
+        court_usage[court_id] = count
+    
+    underutilized_courts = [cid for cid, count in court_usage.items() if count < (current_bookings / len(all_courts) * 0.3)]
+
     return {
-        "total_bookings_30d": total_bookings,
-        "total_income": round(income_by_price, 2),
+        # Período actual
+        "total_bookings_30d": current_bookings,
+        "total_income": round(current_income, 2),
+        "period": period,
+        
+        # Período anterior (comparativa)
+        "previous_bookings_30d": previous_bookings,
+        "previous_income": round(previous_income, 2),
+        "booking_variation": booking_variation,
+        "income_variation": income_variation,
+        
+        # Tasas y ratios
         "cancellation_rate": cancellation_rate,
+        "avg_occupancy": avg_occupancy,
+        "avg_ticket": avg_ticket,
+        
+        # Ocupación
         "court_occupancy": court_stats,
+        "occupancy_by_hour_and_court": heatmap,
+        
+        # Demanda
         "income_by_demand": income_by_demand,
+        
+        # Tendencias
         "peak_hours": peak_hours,
-        "top_users": top_users
+        "daily_income_trend": daily_income_trend,
+        "daily_bookings_trend": daily_bookings_trend,
+        
+        # Top
+        "top_users": top_users,
+        
+        # Alertas
+        "underutilized_courts": underutilized_courts
     }
 
 @router.get("/courts")
