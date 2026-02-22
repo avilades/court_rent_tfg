@@ -52,6 +52,7 @@ Este proceso permite a nuevos usuarios darse de alta en el sistema con permisos 
     2.  **Permisos**: Verifica que el usuario tenga `can_rent == True`.
     3.  **Persistencia**: Llama a `crud.create_booking()`.
     4.  **Logs**: Registra: `Reserva creada: Usuario=..., Pista=..., Fecha=..., Hora=...`.
+    5.  **Notificaciones**: Envía un email de confirmación inmediato y crea un `ScheduledTask` en la tabla `scheduled_tasks` para enviar un recordatorio 24h antes de la reserva (vía `task_service.schedule_reminder_task()`).
 - **Resultado**: Redirección a la lista de reservas del usuario.
 
 ---
@@ -82,6 +83,7 @@ Permite anular una reserva que aún no ha ocurrido.
         - Busca la reserva por ID y usuario.
         - Cambia el campo `is_cancelled` a `True` en la base de datos.
         - Ejecuta el `db.commit()`.
+    3.  **Notificaciones**: Envía un email de cancelación al usuario y anula cualquier `ScheduledTask` pendiente asociado a la reserva para evitar envíos futuros.
     3.  **Logs**: Registra: `Reserva cancelada: ID=..., Usuario=...`.
 - **Resultado**: La tabla de reservas se actualiza automáticamente mostrando el nuevo estado.
 

@@ -27,6 +27,7 @@ Esta es la función principal.
     *   Si está en **gris**, ya la ha cogido otra persona.
 4.  **Precios inteligentes**: Verás que no todas las horas cuestan lo mismo. Jugar un fin de semana por la mañana puede ser más caro que un martes a mediodía. El programa calcula el precio automáticamente según la demanda.
 5.  **Confirmación inmediata**: Al hacer clic, el sistema comprueba en milisegundos que nadie te haya quitado la pista y te muestra un mensaje de éxito.
+6.  **Email y recordatorio**: Tras la reserva recibirás un email de confirmación y el sistema programará automáticamente un recordatorio para 24 horas antes de tu reserva (procesado por un worker que lee las tareas guardadas en la base de datos).
 
 ---
 
@@ -54,6 +55,7 @@ Aunque no lo veas, el programa hace cosas importantes para que todo funcione bie
 *   **El Guardián de Reservas (Integridad de Datos)**: Imagina que dos personas intentan reservar la *misma* pista a la *misma* hora exacta. El programa tiene un "árbitro" muy estricto que solo deja pasar al primero que llega. Al segundo le avisará de que ya está ocupada. Es imposible que haya dos reservas solapadas.
 *   **El Meteorólogo (Servicio de Clima)**: El programa se conecta a internet para consultar la previsión del tiempo real en la ubicación de las pistas.
 *   **El Candado (Seguridad)**: Toda la información viaja protegida para que tus datos personales estén seguros.
+*   **El Cartero (Notificaciones)**: Cuando creas o cancelas una reserva, el sistema envía emails (confirmación, cancelación) y programa recordatorios 24h antes. Un proceso en segundo plano (`task_worker.py`) lee las tareas en la base de datos y envía esos correos de forma fiable.
 
 ---
 

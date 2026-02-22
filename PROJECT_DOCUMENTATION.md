@@ -62,6 +62,9 @@ Define los modelos de la base de datos utilizando SQLAlchemy. Representa las tab
     - `Schedule`: Define los slots de disponibilidad semanal.
     - `Holiday`: Excepciones de fechas (festivos).
     - `Booking`: Representa una reserva realizada por un usuario.
+    - `Notification`: Registra intentos de envío de notificaciones por email (confirmación, recordatorio, cancelación). Incluye campos como `notification_id`, `user_id`, `booking_id`, `notification_type`, `subject`, `content`, `recipient_email`, `is_sent`, `sent_at`, `created_at` y `scheduled_for`.
+
+    - `ScheduledTask`: Modelo para persistir tareas programadas (DB-backed). Se usa para recordatorios 24h antes de la reserva y otras tareas programadas. Campos principales: `task_id`, `user_id`, `booking_id`, `task_type`, `scheduled_for`, `task_data`, `is_executed`, `executed_at`, `retry_count`, `last_error`, `created_at`.
 
 ### `schemas.py`
 Define los esquemas de Pydantic para la validación de datos y la serialización JSON. Actúa como el contrato entre la API y el cliente.
@@ -146,6 +149,10 @@ Endpoints relacionados con la gestión de reservas y búsqueda de disponibilidad
     - `book_court(booking, current_user, db)`: Realiza una nueva reserva.
     - `search_available_slots(date, db)`: Busca slots libres y sus precios para una fecha específica.
     - `cancel_booking(booking_id, current_user, db)`: Cancela una reserva existente.
+
+Nota: Las operaciones de reserva ahora integran el sistema de notificaciones y tareas persistentes:
+- Tras crear una reserva se envía un email de confirmación y se genera un `ScheduledTask` en la tabla `scheduled_tasks` para enviar un recordatorio 24h antes (`task_service.schedule_reminder_task()`).
+- Al cancelar una reserva se envía un email de cancelación y se anulan los `ScheduledTask` pendientes asociados a la reserva.
 
 ### `admin.py`
 Centraliza todos los endpoints relacionados con la administración del sistema, tanto de interfaz (HTML) como de API (JSON).
