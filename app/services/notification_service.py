@@ -11,6 +11,7 @@ import smtplib
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from datetime import datetime
 from sqlalchemy.orm import Session
 from .. import models
@@ -51,8 +52,9 @@ except (ValueError, TypeError):
     SMTP_PORT = 5871
     logger.warning(f"Valor de SMTP_PORT inválido: '{_smtp_port_raw}'. Usando 5871 por defecto.")
 
-SENDER_EMAIL = os.getenv("SENDER_EMAIL") or "noreply@courtrent.com"
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD") or ""
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
+FRIENDLY_SENMDER_NAME = "Reserva de pistas"
 
 
 # Si la contraseña viene entre comillas o contiene espacios accidentales, saneamos
@@ -89,7 +91,7 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
         # Crear mensaje
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["From"] = SENDER_EMAIL
+        message["From"] = formataddr((FRIENDLY_SENMDER_NAME, SENDER_EMAIL))
         message["To"] = to_email
         
         # Adjuntar contenido HTML
@@ -98,6 +100,7 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
         
         logger.debug(f"SMTP_SERVER: {SMTP_SERVER}")
         logger.debug(f"SMTP_PORT: {SMTP_PORT}") 
+        logger.debug(f"SENDER_EMAIL: {FRIENDLY_SENMDER_NAME} <{SENDER_EMAIL}>")
         logger.debug(f"SENDER_EMAIL: {SENDER_EMAIL}")
         logger.debug(f"SENDER_PASSWORD: {SENDER_PASSWORD}")
 

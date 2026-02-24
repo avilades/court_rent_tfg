@@ -16,6 +16,7 @@ from .notification_service import (
     create_notification_record,
     generate_reminder_email
 )
+from .task_service import process_pending_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,48 @@ def init_scheduler():
     
     try:
         scheduler.start()
+        # Programar job periódico para procesar tareas pendientes cada 30 minutos
+        # (en minuto 0 y 30) para cubrir reservas que empiezan en :00 y :30.
+        try:
+            # Si existe, reemplaza la tarea para evitar duplicados
+            scheduler.add_job(
+                func=_process_pending_tasks_job,
+                trigger='cron',
+                minute='0,30',
+                id='process_pending_tasks_cron',
+                replace_existing=True,
+                name='Procesar tareas pendientes cada 30 minutos'
+            )
+            logger.info("Job periódico 'process_pending_tasks_cron' añadido al scheduler")
+        except Exception as _e:
+            logger.error(f"No se pudo añadir job periódico: {_e}")
         scheduler_configured = True
         logger.info("APScheduler inicializado correctamente")
     except Exception as e:
         logger.error(f"Error al inicializar APScheduler: {str(e)}")
+
+
+def _process_pending_tasks_job():
+    """
+    Runner que se ejecuta desde APScheduler cada 30 minutos y llama a
+    `process_pending_tasks` pasando una sesión de base de datos.
+    """
+    try:
+        db = database.SessionLocal()
+        logger.info("Ejecutando job periódico: process_pending_tasks")
+        stats = process_pending_tasks(db)
+        logger.info(
+            f"Job process_pending_tasks result: processed={stats.get('total_processed', 0)}, "
+            f"success={stats.get('successful', 0)}, failed={stats.get('failed', 0)}, "
+            f"still_pending={stats.get('still_pending', 0)}"
+        )
+    except Exception as e:
+        logger.error(f"Error en job process_pending_tasks: {str(e)}", exc_info=True)
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
 
 
 def schedule_reminder_email(booking_id: int, user_id: int, recipient_email: str, 
