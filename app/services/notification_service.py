@@ -262,6 +262,63 @@ def generate_booking_confirmation_email(user_name: str, court_number: int, start
     """
 
 
+def generate_welcome_email(user_name: str) -> str:
+    """Genera HTML para el email de bienvenida de un nuevo usuario."""
+    return f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #2c3e50; text-align: center;">¡Bienvenido a Reserva de pistas!</h2>
+
+                <p>Hola <strong>{user_name}</strong>,</p>
+
+                <p>Gracias por registrarte en nuestra plataforma. Ya puedes comenzar a reservar pistas, gestionar tus reservas y disfrutar de tus actividades deportivas con facilidad.</p>
+
+                <div style="background-color: #f0f8ff; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;">
+                    <p><strong>📌 Próximos pasos:</strong></p>
+                    <ul>
+                        <li>Explora las pistas disponibles.</li>
+                        <li>Reserva horarios que se adapten a ti.</li>
+                        <li>Recibe notificaciones de tus reservas y recordatorios.</li>
+                    </ul>
+                </div>
+
+                <p>Si necesitas ayuda, puedes contactarnos desde la plataforma.</p>
+
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                <p style="color: #888; font-size: 12px; text-align: center;">Court Rent - Sistema de Reservas</p>
+            </div>
+        </body>
+    </html>
+    """
+
+
+def generate_password_reset_email(user_name: str, reset_link: str) -> str:
+    """Genera HTML para el email de restablecimiento de contraseña."""
+    return f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #3498db; text-align: center;">🔒 Restablece tu contraseña</h2>
+
+                <p>Hola <strong>{user_name}</strong>,</p>
+
+                <p>Recibimos una solicitud de restablecimiento de contraseña para tu cuenta. Haz clic en el siguiente enlace para establecer una nueva contraseña:</p>
+
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_link}" style="display: inline-block; background-color: #3498db; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none;">Restablecer contraseña</a>
+                </p>
+
+                <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
+
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                <p style="color: #888; font-size: 12px; text-align: center;">Court Rent - Sistema de Reservas</p>
+            </div>
+        </body>
+    </html>
+    """
+
+
 def generate_reminder_email(user_name: str, court_number: int, start_time: str) -> str:
     """Genera HTML para recordatorio 24h antes."""
     return f"""

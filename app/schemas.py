@@ -115,3 +115,14 @@ class UserPasswordReset(BaseModel):
     user_id: int
     new_password: str
 
+
+class PasswordResetRequest(BaseModel):
+    """Esquema para solicitar un enlace de restablecimiento por email."""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Esquema para confirmar el cambio de contraseña con token."""
+    token: str
+    new_password: str
+
