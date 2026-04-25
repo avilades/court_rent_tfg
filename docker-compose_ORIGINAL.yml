@@ -24,7 +24,6 @@ services:
   task_worker:
     build: .
     command: python app/workers/task_worker.py 60
-    working_dir: /app
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/court_rent
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
@@ -35,7 +34,6 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_PASSWORD=${SENDER_PASSWORD}
-      - PYTHONPATH=/app
     depends_on:
       - db
     volumes:
@@ -50,22 +48,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=court_rent
     ports:
-      - "5433:5432"
-      
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-      PGADMIN_LISTEN_PORT: 5050
-    ports:
-      - "5050:5050"
-    depends_on:
-      - db
+      - "5432:5432"
 
 volumes:
   postgres_data:
-
-
-

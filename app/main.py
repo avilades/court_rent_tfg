@@ -147,30 +147,49 @@ def shutdown_event():
 async def home(request: Request):
     """Página principal: Formulario de inicio de sesión."""
     logging.info("Renderizando página principal...")
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request, 
+        name="login.html", 
+        context={}
+    )
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     """Página de registro de nuevos usuarios."""
     logging.info("Renderizando página de registro...")
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(
+            request=request, 
+            name="register.html", 
+            context={}
+        )
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Panel de control principal tras iniciar sesión."""
     logging.info("Renderizando panel de control...")
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(
+                request=request, 
+                name="dashboard.html", 
+                context={}
+            )
 
 @app.get("/book", response_class=HTMLResponse)
 async def book_page(request: Request):
     """Vista para realizar una nueva reserva de pistas."""
     logging.info("Renderizando página de reserva...")
-    return templates.TemplateResponse("book.html", {"request": request})
+    return templates.TemplateResponse(
+                    request=request, 
+                    name="book.html", 
+                    context={}
+                )
 
 @app.get("/reservations", response_class=HTMLResponse)
 async def reservations_page(request: Request):
     """Vista para que el usuario consulte y cancele sus propias reservas."""
     logging.info("Renderizando página de reservas...")
-    return templates.TemplateResponse("reservations.html", {"request": request})
-
+    return templates.TemplateResponse(
+                    request=request, 
+                    name="reservations.html", 
+                    context={}
+                )
 

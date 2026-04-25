@@ -99,7 +99,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
 @router.get("/password-reset-request", response_class=HTMLResponse)
 def password_reset_request_page(request: Request):
     """Muestra el formulario de solicitud de restablecimiento de contraseña."""
-    return templates.TemplateResponse("request_password_reset.html", {"request": request})
+    logging.info("Renderizando página de restaurar pass...")
+    return templates.TemplateResponse(
+                request=request, 
+                name="request_password_reset.html", 
+                context={}
+            )
+
 
 
 @router.post("/password-reset-request")
@@ -129,13 +135,18 @@ def password_reset_request(data: schemas.PasswordResetRequest, request: Request,
     return {"msg": "Si existe una cuenta asociada, recibirás un correo para restablecer la contraseña."}
 
 
+
 @router.get("/password-reset", response_class=HTMLResponse)
 def password_reset_page(request: Request, token: str | None = None):
     """Muestra el formulario para introducir la nueva contraseña usando el token recibido."""
     if not token:
         raise HTTPException(status_code=400, detail="Token de restablecimiento requerido")
-    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
-
+    logging.info("Renderizando página de reset...")
+    return templates.TemplateResponse(
+                    request=request, 
+                    name="reset_password.html", 
+                    context={}
+                )
 
 @router.post("/password-reset")
 def password_reset_confirm(data: schemas.PasswordResetConfirm, db: Session = Depends(database.get_db)):

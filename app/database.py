@@ -17,6 +17,7 @@ import os
 # 'db' es el nombre del servicio de base de datos definido en docker-compose.yml.
 # Se obtiene de variable de entorno para seguridad, con fallback a valor por defecto para desarrollo local
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/court_rent")
+logger.info(DATABASE_URL)
 
 # 1. Creación del Engine (Motor)
 # El 'engine' es el punto de entrada de SQLAlchemy. Se encarga de gestionar

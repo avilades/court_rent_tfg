@@ -21,25 +21,41 @@ router = APIRouter(
 async def admin_page(request: Request):
     """Panel de administración (solo accesible para usuarios con permisos)."""
     logger.info("Renderizando panel de administración...")
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(
+                request=request, 
+                name="admin.html", 
+                context={}
+            )
 
 @router.get("/stats", response_class=HTMLResponse)
 async def admin_stats_page(request: Request):
     """Panel de estadísticas para el administrador."""
     logger.info("Renderizando panel de estadísticas...")
-    return templates.TemplateResponse("admin_stats.html", {"request": request})
+    return templates.TemplateResponse(
+                request=request, 
+                name="admin_stats.html", 
+                context={}
+            )
 
 @router.get("/precio", response_class=HTMLResponse)
 async def price_page(request: Request):
     """Vista para la gestión de precios (Panel Admin)."""
     logger.info("Renderizando página de gestión de precios...")
-    return templates.TemplateResponse("admin_precio.html", {"request": request})
+    return templates.TemplateResponse(
+                    request=request, 
+                    name="admin_precio.html", 
+                    context={}
+                )
 
 @router.get("/reservas", response_class=HTMLResponse)
 async def admin_reservas_page(request: Request):
     """Vista de gestión de todas las reservas (Panel Admin)."""
     logger.info("Renderizando página de todas las reservas...")
-    return templates.TemplateResponse("admin_reservas.html", {"request": request})
+    return templates.TemplateResponse(
+                        request=request, 
+                        name="admin_reservas.html", 
+                        context={}
+                    )
 
 @router.get("/prices")
 def get_prices(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
