@@ -229,9 +229,9 @@ curl -X POST http://localhost:8000/admin/tasks/process \
 
 # O directamente en Python:
 python -c "
-from app.database import SessionLocal
+from app.database import session_local
 from app.services.task_service import process_pending_tasks
-db = SessionLocal()
+db = session_local()
 result = process_pending_tasks(db)
 print(result)
 "
@@ -249,11 +249,11 @@ Busca líneas con "Recordatorio" o errores
 ### Opción 1: Crear Tarea Manualmente
 ```python
 # En un script o terminal Python:
-from app.database import SessionLocal
+from app.database import session_local
 from app.services.task_service import schedule_reminder_task
 from datetime import datetime, timedelta
 
-db = SessionLocal()
+db = session_local()
 
 # Programar para 5 minutos desde ahora (en lugar de 24h)
 now = datetime.utcnow()
@@ -270,7 +270,7 @@ schedule_reminder_task(
 
 # Esperar 5 minutos...
 # Luego ejecutar:
-# python -c "from app.database import SessionLocal; from app.services.task_service import process_pending_tasks; db = SessionLocal(); print(process_pending_tasks(db))"
+# python -c "from app.database import session_local; from app.services.task_service import process_pending_tasks; db = session_local(); print(process_pending_tasks(db))"
 ```
 
 ### Opción 2: Modificar scheduled_for Directamente

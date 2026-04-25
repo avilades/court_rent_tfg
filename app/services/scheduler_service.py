@@ -64,7 +64,7 @@ def _process_pending_tasks_job():
     `process_pending_tasks` pasando una sesión de base de datos.
     """
     try:
-        db = database.SessionLocal()
+        db = database.session_local()
         logger.info("Ejecutando job periódico: process_pending_tasks")
         stats = process_pending_tasks(db)
         logger.info(
@@ -134,7 +134,7 @@ def _send_reminder_task(booking_id: int, user_id: int, recipient_email: str,
     """
     try:
         # Obtener sesión de base de datos
-        db = database.SessionLocal()
+        db = database.session_local()
         
         # Obtener usuario
         user = db.query(models.User).filter(models.User.user_id == user_id).first()

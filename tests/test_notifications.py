@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 sys.path.insert(0, os.path.dirname(__file__).replace('/tests', ''))
 
 # Importar configuración
-from app.database import SessionLocal
+from app.database import session_local
 from app.services.notification_service import (
     send_email,
     send_and_record_notification,
@@ -223,7 +223,7 @@ def test_database_notification_record():
     print("TEST 7: Registro en Base de Datos")
     print("="*60)
     
-    db = SessionLocal()
+    db = session_local()
     
     try:
         # Verificar que existe la tabla Notification

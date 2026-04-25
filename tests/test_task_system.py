@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 # Agregar directorio raíz al path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal
+from app.database import session_local
 from app.services.task_service import (
     schedule_reminder_task,
     process_pending_tasks,
@@ -29,7 +29,7 @@ def test_task_creation():
     print("TEST 1: Crear una tarea de recordatorio")
     print("="*60)
     
-    db = SessionLocal()
+    db = session_local()
     
     try:
         # Calcular tiempo de la tarea (5 minutos desde ahora)
@@ -80,7 +80,7 @@ def test_task_statistics():
     print("TEST 2: Ver estadísticas de tareas")
     print("="*60)
     
-    db = SessionLocal()
+    db = session_local()
     
     try:
         stats = get_task_statistics(db)
@@ -107,7 +107,7 @@ def test_task_processing():
     print("TEST 3: Procesar tareas pendientes")
     print("="*60)
     
-    db = SessionLocal()
+    db = session_local()
     
     try:
         # Primero, mover la tarea de prueba a hace 1 minuto (para que se procese)
@@ -147,7 +147,7 @@ def test_task_cancellation():
     print("TEST 4: Cancelar una tarea")
     print("="*60)
     
-    db = SessionLocal()
+    db = session_local()
     
     try:
         # Crear otra tarea de test

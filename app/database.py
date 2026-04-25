@@ -24,9 +24,9 @@ logger.info(DATABASE_URL)
 # la conexión real con la base de datos y de traducir las consultas de Python a SQL.
 engine = create_engine(DATABASE_URL)
 
-# 2. SessionLocal
+# 2. session_local
 # sessionmaker crea una clase de "fábrica" para sesiones. 
-# Cada instancia de SessionLocal será una sesión de base de datos única.
+# Cada instancia de session_local será una sesión de base de datos única.
 # autocommit=False: los cambios no se guardan automáticamente, hay que hacer .commit()
 # autoflush=False: no se envían los cambios a la DB antes de cada consulta automáticamente.
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
