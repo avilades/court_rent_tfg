@@ -19,11 +19,6 @@ import sys
 import os
 from datetime import datetime, timedelta
 
-# Configurar logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 # Agregar el directorio padre al path
@@ -44,11 +39,10 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
     Args:
         poll_interval: Segundos entre cada revisión de tareas
     """
-    logger.info("="*60)
     logger.info("🚀 INICIANDO TASK WORKER")
     logger.info("="*60)
     logger.info(f"Revisando tareas pendientes cada {poll_interval} segundos...")
-    logger.info("")
+    
     
     consecutive_errors = 0
     
@@ -56,8 +50,7 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
         while True:
             try:
                 # Obtener conexión a BD
-                db = database.SessionLocal()
-                
+                db = database.session_local()
                 # Obtener estadísticas
                 stats = get_task_statistics(db)
                 
@@ -98,12 +91,12 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
             time.sleep(poll_interval)
             
     except KeyboardInterrupt:
-        logger.info("\n⏹️  Worker detenido por el usuario (Ctrl+C)")
+        logger.info(" Worker detenido por el usuario (Ctrl+C)")
     except Exception as e:
         logger.critical(f"✗ Error fatal en el worker: {str(e)}", exc_info=True)
         sys.exit(1)
     finally:
-        logger.info("👋 Task Worker finalizado")
+        logger.info("Task Worker finalizado")
 
 
 if __name__ == "__main__":
