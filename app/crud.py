@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from . import models, schemas
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -109,7 +109,7 @@ def get_user_bookings(db: Session, user_id: int, date_from: str = None, date_to:
     """
     from datetime import datetime, timedelta
     
-    query = db.query(models.Booking).filter(models.Booking.user_id == user_id)
+    query = db.query(models.Booking).options(joinedload(models.Booking.price_snapshot)).filter(models.Booking.user_id == user_id)
     
     # Aplicar filtros de fecha si se proporcionan
     if date_from:
@@ -241,7 +241,7 @@ def get_all_users(db: Session):
     """
     Recupera todos los usuarios registrados.
     """
-    return db.query(models.User).all()
+    return db.query(models.User).options(joinedload(models.User.permissions)).all()
 
 def update_user_password(db: Session, user_id: int, new_password: str):
     """

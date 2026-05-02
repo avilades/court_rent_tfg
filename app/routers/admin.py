@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import logging
 from .. import crud, schemas, models
 from ..dependencies import get_db, get_current_user
@@ -65,7 +65,7 @@ def get_prices(current_user: models.User = Depends(get_current_user), db: Sessio
     if not current_user.permissions.is_admin:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
-    prices = db.query(models.Price).filter(models.Price.is_active == True).all()
+    prices = db.query(models.Price).options(joinedload(models.Price.demand)).filter(models.Price.is_active == True).all()
     logger.info("Precios obtenidos correctamente")
     # Retornamos los campos necesarios para el frontend
     return [{
@@ -377,7 +377,10 @@ def get_daily_bookings(date: str, current_user: models.User = Depends(get_curren
     end_dt = datetime.combine(target_date, time.max)
 
     # Consulta con joins para obtener info de usuario y precio histórico
-    bookings = db.query(models.Booking).filter(
+    bookings = db.query(models.Booking).options(
+        joinedload(models.Booking.user),
+        joinedload(models.Booking.price_snapshot)
+    ).filter(
         models.Booking.start_time >= start_dt,
         models.Booking.start_time <= end_dt
     ).order_by(models.Booking.start_time.asc()).all()

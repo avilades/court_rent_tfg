@@ -107,6 +107,7 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
     3. Obtiene el precio dinámico aplicable según el horario (Schedule).
     """
     from datetime import datetime, timedelta, time as dt_time
+    from sqlalchemy import or_
     
     # Bloques horarios definidos en el sistema
     start_times = [
@@ -118,22 +119,24 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
     target_date = datetime.strptime(date, "%Y-%m-%d").date()
     day_of_week = target_date.weekday()  # 0=Lunes, 6=Domingo
     
+    # Rango del día para filtros
+    start_of_day = datetime.combine(target_date, dt_time.min)
+    end_of_day = datetime.combine(target_date, dt_time.max)
+    
     # Solo buscamos en pistas que NO estén en mantenimiento
     courts = db.query(models.Court).filter(models.Court.is_maintenance == False).all()
     
     available_slots = []
     
-    # Optimizacion: Obtenemos todas las reservas ACTIVAS para ese día de una sola vez
+    # Optimizacion: Obtenemos solo las reservas ACTIVAS para ese día específico
     existing_bookings = db.query(models.Booking).filter(
+        models.Booking.start_time >= start_of_day,
+        models.Booking.start_time <= end_of_day,
         models.Booking.is_cancelled == False
     ).all()
     
     # Creamos un set de claves "pista_hora" para una búsqueda rápida en memoria
-    booked_keys = set()
-    for b in existing_bookings:
-        if b.start_time.date() == target_date:
-            key = f"{b.court_id}_{b.start_time.strftime('%H:%M')}"
-            booked_keys.add(key)
+    booked_keys = {f"{b.court_id}_{b.start_time.strftime('%H:%M')}" for b in existing_bookings}
     
     # Obtenemos los horarios para el día de la semana
     schedules = db.query(models.Schedule).filter(models.Schedule.day_of_week == day_of_week).all()
@@ -141,41 +144,44 @@ def search_available_slots(date: str, db: Session = Depends(get_db)):
     # Mapa de demanda por hora
     time_demand_map = {s.start_time.strftime('%H:%M'): s.demand_id for s in schedules}
     
+    # Optimizacion: Obtenemos los precios vigentes para esa fecha una sola vez
+    # Buscamos los precios que cubren el rango del día solicitado
+    prices_query = db.query(models.Price).filter(
+        models.Price.start_date <= end_of_day,
+        or_(models.Price.end_date == None, models.Price.end_date > start_of_day)
+    ).order_by(models.Price.start_date.desc()).all()
+    
+    # Creamos un mapa de demand_id -> price_amount (el más reciente/vigente)
+    demand_price_map = {}
+    for p in prices_query:
+        if p.demand_id not in demand_price_map:
+            demand_price_map[p.demand_id] = p.amount
+    
     # Generamos la matriz de disponibilidad (Pistas x Horarios)
     for court in courts:
         for t_str in start_times:
             key = f"{court.court_id}_{t_str}"
             is_taken = key in booked_keys
             
+            # Si ya está ocupada, no hace falta procesar el precio si solo devolvemos slots libres
+            if is_taken:
+                continue
+                
             # Construcción de las marcas de tiempo de inicio y fin
             start_dt = datetime.strptime(f"{date} {t_str}", "%Y-%m-%d %H:%M")
             end_dt = start_dt + timedelta(minutes=90)
             
             # Recuperamos el ID de demanda para este bloque
             demand_id = time_demand_map.get(t_str)
-            price_amount = None
+            price_amount = demand_price_map.get(demand_id) if demand_id else None
             
-            if demand_id:
-                # Buscamos el precio vigente para esa demanda en ESA fecha/hora específica
-                from sqlalchemy import or_
-                price = db.query(models.Price).filter(
-                    models.Price.demand_id == demand_id,
-                    models.Price.start_date <= start_dt,
-                    or_(models.Price.end_date == None, models.Price.end_date > start_dt)
-                ).order_by(models.Price.start_date.desc()).first()
-                
-                if price:
-                    price_amount = price.amount
-            
-            # Solo devolvemos los slots que NO están ocupados (o según lógica deseada)
-            if not is_taken:
-                available_slots.append(schemas.SlotBase(
-                    court_id=court.court_id,
-                    start_time=start_dt,
-                    end_time=end_dt,
-                    is_available=True,
-                    price_amount=price_amount
-                ))
+            available_slots.append(schemas.SlotBase(
+                court_id=court.court_id,
+                start_time=start_dt,
+                end_time=end_dt,
+                is_available=True,
+                price_amount=price_amount
+            ))
     
     logging.info(f"Busqueda de disponibilidad para el dia {date}")
     

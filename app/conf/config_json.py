@@ -39,8 +39,7 @@ def initialize_lat_lon():
     LATITUD = config_data.get("latitud")
     LONGITUD = config_data.get("longitud")
 
-    logger.debug(f"Latitud: {LATITUD}, Longitud: {LONGITUD}")
-    logger.info("Variables de latitud y longitud inicializadas")
+    logger.info(f"Variables de latitud y longitud inicializadas Latitud: {LATITUD}, Longitud: {LONGITUD}")
 
     return LATITUD, LONGITUD
 
