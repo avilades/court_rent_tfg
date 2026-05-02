@@ -2,15 +2,11 @@ from sqlalchemy.orm import Session, joinedload
 from . import models, schemas
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-
 import logging
 
-# Configuración del logger para este módulo
 logger = logging.getLogger(__name__)
 
-# --- Security Configuration ---
 # Configuración de seguridad para el hashing de contraseñas.
-# 'pbkdf2_sha256' es un algoritmo robusto y recomendado por defecto.
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
@@ -21,12 +17,15 @@ def verify_password(plain_password, hashed_password):
     :return: True si coinciden, False en caso contrario.
     """
     if not plain_password or not hashed_password:
-        logger.warning(f"Password verification failed: {plain_password}")
+        #logger.debug(f"Password verification failed: {plain_password}")
+        logger.info(f"Password verification failed")
         return False
     if not pwd_context.verify(plain_password, hashed_password):
-        logger.warning(f"Password verification failed: {plain_password}")
+        #logger.debug(f"Password verification failed: {plain_password}")
+        logger.info(f"Password verification failed")
         return False
-    logger.info(f"Password verification successful: {plain_password}")
+    #logger.debug(f"Password verification successful: {plain_password}")
+    logger.info(f"Password verification successful")
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
@@ -35,7 +34,7 @@ def get_password_hash(password):
     :param password: Password en texto plano.
     :return: String con el hash generado.
     """
-    logger.debug(f"Hashing password: {password}")
+    #logger.debug(f"Hashing password: {password}")
     logger.info(f"Hashing password")
     return pwd_context.hash(password)
 
@@ -93,8 +92,9 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 def get_courts(db: Session):
     """
-    Recupera todas las pistas de tenis/pádel registradas.
+    Recupera todas las pistas registradas.
     """
+    logger.info(f"Pistas recuperadas")
     return db.query(models.Court).all()
 
 # --- Booking Operations ---

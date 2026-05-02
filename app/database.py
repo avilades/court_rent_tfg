@@ -2,30 +2,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 # --- Configuración de la Base de Datos ---
-# Utilizamos PostgreSQL como motor de persistencia.
-# El formato de la URL es: postgresql://<usuario>:<contraseña>@<host>:<puerto>/<nombre_db>
 # 'db' es el nombre del servicio de base de datos definido en docker-compose.yml.
-import os
-
-# --- Configuración de la Base de Datos ---
-# Utilizamos PostgreSQL como motor de persistencia.
-# El formato de la URL es: postgresql://<usuario>:<contraseña>@<host>:<puerto>/<nombre_db>
-# 'db' es el nombre del servicio de base de datos definido en docker-compose.yml.
-# Se obtiene de variable de entorno para seguridad, con fallback a valor por defecto para desarrollo local
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/court_rent")
+DATABASE_URL = os.getenv("DATABASE_URL")
 logger.info(DATABASE_URL)
 
-# 1. Creación del Engine (Motor)
 # El 'engine' es el punto de entrada de SQLAlchemy. Se encarga de gestionar
-# la conexión real con la base de datos y de traducir las consultas de Python a SQL.
 engine = create_engine(DATABASE_URL)
 
 # 2. session_local
-# sessionmaker crea una clase de "fábrica" para sesiones. 
 # Cada instancia de session_local será una sesión de base de datos única.
 # autocommit=False: los cambios no se guardan automáticamente, hay que hacer .commit()
 # autoflush=False: no se envían los cambios a la DB antes de cada consulta automáticamente.

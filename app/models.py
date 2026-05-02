@@ -20,10 +20,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False) # Email único (usado para login)
     password_hash = Column(String, nullable=False) # Hash seguro de la contraseña
 
-    # Relaciones
-    # Relación One-to-One con Permissions (un usuario tiene un set de permisos)
+    # Relación One-to-One con Permissions
     permissions = relationship("Permission", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    # Relación One-to-Many con Bookings (un usuario puede tener muchas reservas)
+    # Relación One-to-Many con Bookings
     bookings = relationship("Booking", back_populates="user")
 
 class Permission(Base):

@@ -27,9 +27,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import database
 from app.services.task_service import process_pending_tasks, get_task_statistics
 
-# Configuración
-POLL_INTERVAL_SECONDS = 60  # Revisar cada 60 segundos
-MAX_CONSECUTIVE_ERRORS = 5  # Detener después de 5 errores consecutivos
+# Revisar cada 60 segundos
+POLL_INTERVAL_SECONDS = 60
+# Detener después de 5 errores consecutivos  
+MAX_CONSECUTIVE_ERRORS = 5  
 
 
 def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
@@ -39,7 +40,7 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
     Args:
         poll_interval: Segundos entre cada revisión de tareas
     """
-    logger.info("🚀 INICIANDO TASK WORKER")
+    logger.info("INICIANDO TASK WORKER")
     logger.info("="*60)
     logger.info(f"Revisando tareas pendientes cada {poll_interval} segundos...")
     
@@ -61,13 +62,13 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
                     result = process_pending_tasks(db)
                     
                     logger.info(
-                        f"✓ Procesadas: "
+                        f"Procesadas: "
                         f"{result.get('successful', 0)} exitosas, "
                         f"{result.get('failed', 0)} fallidas"
                     )
                 else:
                     logger.debug(
-                        f"📊 Estado: "
+                        f"Estado: "
                         f"total={stats.get('total_tasks', 0)}, "
                         f"ejecutadas={stats.get('executed', 0)}, "
                         f"pendientes={stats.get('pending_future', 0)}"
@@ -79,7 +80,7 @@ def run_worker(poll_interval: int = POLL_INTERVAL_SECONDS):
             except Exception as e:
                 consecutive_errors += 1
                 logger.error(
-                    f"✗ Error procesando tareas ({consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}): {str(e)}",
+                    f"Error procesando tareas ({consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}): {str(e)}",
                     exc_info=True
                 )
                 

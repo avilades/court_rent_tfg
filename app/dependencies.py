@@ -18,17 +18,15 @@ load_dotenv()
 logger.info(f"Variables de entorno cargadas")
 
 # --- Constantes de Configuración ---
-# ¡En una aplicación de producción real, estas claves deben estar en variables de entorno!
-SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")              # CAMBIAR PARA PRODUCCIÓN
-ALGORITHM = os.getenv("ALGORITHM", "HS256")                               # Algoritmo de cifrado para el token JWT
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30)) # Tiempo de vida del token (30 minutos)
+SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
+# Algoritmo de cifrado para el token JWT
+ALGORITHM = os.getenv("ALGORITHM")
+# Tiempo de vida del token
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")) 
 
-# OAuth2PasswordBearer es una clase que le indica a FastAPI 
-# que el cliente enviará un token en la cabecera "Authorization" como tipo "Bearer".
+# OAuth2PasswordBearer es una clase que le indica a FastAPI que el cliente enviará un token en la cabecera "Authorization" como tipo "Bearer".
 # "tokenUrl" es la URL relativa donde el usuario envía usuario/password para obtener el token.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-# --- Dependencias de Autenticación ---
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)) -> models.User:
     """

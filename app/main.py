@@ -16,11 +16,10 @@ from .services.task_service import process_pending_tasks
 initialize_lat_lon()  # Cargamos la configuración al iniciar la aplicación
 # --- Configuración Inicial ---
 
-# Inicializamos el sistema de logs (registro de eventos)
+# Inicializamos el sistema de logs
 setup_logging()
 
 # Crear las tablas de la base de datos si no existen.
-# Nota: En sistemas de producción reales es mejor usar herramientas como Alembic para migraciones.
 models.Base.metadata.create_all(bind=database.engine)
 
 # Instanciamos la aplicación FastAPI

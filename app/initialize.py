@@ -108,7 +108,7 @@ def initialize_prices(db: Session):
 def initialize_courts(db: Session):
     """
     Crea las 8 pistas de la instalación.
-    Asumimos que las pistas 5 a 8 son cubiertas (is_covered=True).
+    Pistas 5 a 8 son cubiertas (is_covered=True).
     """
     if db.query(models.Court).count() == 0:
         for i in range(1, 9):
