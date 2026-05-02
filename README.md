@@ -104,7 +104,7 @@ Consulta `NOTIFICATIONS_SETUP.md` para más detalles de configuración.
 ## Usuarios de Prueba
 
 Para acceder como administrador:
-- **Email**: `admin@admin.com`
-- **Password**: `admin123` (Configurado en la inicialización)
+- **Email**: `alvarovilades@gmail.com`
+- **Password**: `admin000` (Configurado en la inicialización)
 
 Puedes registrar un nuevo usuario en la pantalla de inicio. Por defecto tendrá permisos para alquilar.
