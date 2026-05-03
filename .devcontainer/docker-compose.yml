@@ -9,14 +9,22 @@ services:
       - ../:/workspace:cached
     command: sleep infinity
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=${DATABASE_URL}
       - SMTP_SERVER=${SMTP_SERVER}
       - SMTP_PORT=${SMTP_PORT}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+    networks:
+      - app-network
 
   db:
     image: postgres:15-alpine
@@ -29,6 +37,13 @@ services:
       POSTGRES_DB: court_rent
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -37,10 +52,14 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: root
       PGADMIN_LISTEN_PORT: 5050
+      SCRIPT_NAME: /pgadmin
     ports:
       - "5050:5050"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
 
   task_worker:
     build:
@@ -50,13 +69,24 @@ services:
     volumes:
       - ../:/workspace:cached
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/court_rent
+      - DATABASE_URL=${DATABASE_URL}
       - SMTP_SERVER=${SMTP_SERVER}
       - SMTP_PORT=${SMTP_PORT}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
 
 volumes:
   postgres-data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -20,9 +20,9 @@ logger.info(f"Variables de entorno cargadas")
 # --- Constantes de Configuración ---
 SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
 # Algoritmo de cifrado para el token JWT
-ALGORITHM = os.getenv("ALGORITHM")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 # Tiempo de vida del token
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")) 
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30.0))
 
 # OAuth2PasswordBearer es una clase que le indica a FastAPI que el cliente enviará un token en la cabecera "Authorization" como tipo "Bearer".
 # "tokenUrl" es la URL relativa donde el usuario envía usuario/password para obtener el token.

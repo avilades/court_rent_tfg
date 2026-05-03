@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from httpcore import request
 from sqlalchemy.orm import Session, joinedload
 import logging
 from .. import crud, schemas, models
@@ -426,7 +427,11 @@ def reset_database(current_user: models.User = Depends(get_current_user), db: Se
 async def admin_users_page(request: Request):
     """Vista de gestión de usuarios (Panel Admin)."""
     logging.info("Renderizando página de gestión de usuarios...")
-    return templates.TemplateResponse("admin_users.html", {"request": request})
+    return templates.TemplateResponse(
+                    request=request, 
+                    name="admin_users.html", 
+                    context={}
+                )
 
 @router.get("/users-list")
 def list_users(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
