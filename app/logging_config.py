@@ -3,6 +3,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 from .conf.config_json import initialize_logger_config
+
 initialize_logger_config()
 
 def setup_logging():
@@ -57,4 +58,5 @@ def setup_logging():
     )
     
     logging.info("\n\n\n\n")
-    logging.info(f"Sistema de logs inicializado. Los archivos se guardarán en la carpeta:  {log_base}")
+    logging.info(f"Sistema de logs inicializado. Los archivos se guardarán en la carpeta:  {log_base} -- Log level: {initialize_logger_config()[0]}")
+    

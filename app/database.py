@@ -8,10 +8,16 @@ logger = logging.getLogger(__name__)
 
 # --- Configuración de la Base de Datos ---
 # 'db' es el nombre del servicio de base de datos definido en docker-compose.yml.
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/court_rent")
-logger.info(DATABASE_URL)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://user:password@db:5432/court_rent"
+    logger.warning("DATABASE_URL not set in environment, using default")
+
 
 # El 'engine' es el punto de entrada de SQLAlchemy. Se encarga de gestionar
+logger.info(f"Creando engine de base de datos con URL: {DATABASE_URL}")
+if not DATABASE_URL or DATABASE_URL.strip() == "":
+    raise ValueError("DATABASE_URL no puede estar vacío")
 engine = create_engine(DATABASE_URL)
 
 # 2. session_local

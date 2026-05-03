@@ -59,9 +59,6 @@ def initialize_logger_config():
     BACKUP_COUNT = log_config.get("backup_count", 30)
     LOG_FORMAT = log_config.get("log_format", "%(asctime)s - %(levelname)s - %(message)s")
 
-    logger.debug(f"LOG_LEVEL: {LOG_LEVEL}, LOG_DIR: {LOG_DIR}, LOG_FILE_NAME: {LOG_FILE_NAME}")
-    logger.info("Configuración del logger inicializada")
-
     return LOG_LEVEL, LOG_DIR, LOG_FILE_NAME, BACKUP_COUNT, LOG_FORMAT
 
 
@@ -73,3 +70,5 @@ LOG_LEVEL, LOG_DIR, LOG_FILE_NAME, BACKUP_COUNT, LOG_FORMAT = None, None, None, 
 if __name__ == "__main__":
     initialize_lat_lon()
     initialize_logger_config()
+    logger.info(f"Configuración del logger inicializada. LOG_LEVEL: {LOG_LEVEL}, LOG_DIR: {LOG_DIR}, LOG_FILE_NAME: {LOG_FILE_NAME}")
+ 
