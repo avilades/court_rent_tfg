@@ -59,7 +59,7 @@
 
         <!-- GRÁFICO DE TENDENCIAS -->
         <div class="section-card" style="margin-top: 2rem;">
-            <h3>📈 Tendencia de Ingresos (Últimos 30 días)</h3>
+            <!-- <h3>📈 Tendencia de Ingresos (Últimos 30 días)</h3> -->
             <canvas id="trend-chart" height="80"></canvas>
         </div>
 
@@ -86,7 +86,8 @@
         <div class="section-card" style="margin-top: 2rem;">
             <h3>🔥 Heatmap: Ocupación por Pista y Hora</h3>
             <div id="heatmap-container" class="heatmap-container"></div>
-            <p style="font-size: 0.85rem; color: #888; margin-top: 1rem;">Los colores más intensos indican mayor ocupación. Usa esto para identificar franjas horarias saturadas o vacías.</p>
+            <p style="font-size: 0.85rem; color: #888; margin-top: 1rem;">Los colores más intensos indican mayor
+                ocupación. Usa esto para identificar franjas horarias saturadas o vacías.</p>
         </div>
     </div>
 </div>
@@ -312,7 +313,8 @@
         font-size: 0.85rem;
     }
 
-    .heatmap-table th, .heatmap-table td {
+    .heatmap-table th,
+    .heatmap-table td {
         border: 1px solid #ddd;
         padding: 0.5rem;
         text-align: center;
@@ -421,7 +423,7 @@
 
         bookingVarEl.textContent = formatVar(bookingVar);
         bookingVarEl.className = 'stat-variation ' + (bookingVar > 0 ? 'up' : (bookingVar < 0 ? 'down' : 'neutral'));
-        
+
         incomeVarEl.textContent = formatVar(incomeVar);
         incomeVarEl.className = 'stat-variation ' + (incomeVar > 0 ? 'up' : (incomeVar < 0 ? 'down' : 'neutral'));
 
@@ -433,7 +435,7 @@
         renderDemandChart(statsData.income_by_demand);
         renderPeakHours(statsData.peak_hours);
         renderTopUsers(statsData.top_users);
-        renderTrendChart();
+        /*renderTrendChart();*/
         renderHeatmap();
     }
 
@@ -447,7 +449,7 @@
             alerts.push({
                 type: 'warning',
                 icon: '⚠️',
-                text: `⚠️ Ocupación baja (${statsData.avg_occupancy}%). Considera promociones o reducir horarios.`
+                text: `Ocupación baja (${statsData.avg_occupancy}%). Considera promociones o reducir horarios.`
             });
         }
 
@@ -456,7 +458,7 @@
             alerts.push({
                 type: 'danger',
                 icon: '❌',
-                text: `❌ Tasa de cancelación alta (${statsData.cancellation_rate}%). Revisa políticas o plazos.`
+                text: `Tasa de cancelación alta (${statsData.cancellation_rate}%). Revisa políticas o plazos.`
             });
         }
 
@@ -465,7 +467,7 @@
             alerts.push({
                 type: 'danger',
                 icon: '📉',
-                text: `📉 Ingresos en baja (${statsData.income_variation}%). Considera ajuste de precios o promociones.`
+                text: `Ingresos en baja (${statsData.income_variation}%). Considera ajuste de precios o promociones.`
             });
         }
 
@@ -474,7 +476,7 @@
             alerts.push({
                 type: 'success',
                 icon: '✅',
-                text: `✅ ¡Excelente! Ingresos en alza (${statsData.income_variation}%).`
+                text: `¡Excelente! Ingresos en alza (${statsData.income_variation}%).`
             });
         }
 
@@ -483,7 +485,7 @@
             alerts.push({
                 type: 'warning',
                 icon: '🏌️',
-                text: `🏌️ Pistas subutilizadas: ${statsData.underutilized_courts.map(c => 'Pista ' + c).join(', ')}. Considera mantenimiento o cambios.`
+                text: `Pistas subutilizadas: ${statsData.underutilized_courts.map(c => 'Pista ' + c).join(', ')}. Considera mantenimiento o cambios.`
             });
         }
 
@@ -492,7 +494,7 @@
             alerts.push({
                 type: 'warning',
                 icon: '💰',
-                text: `💰 Ticket medio bajo (${statsData.avg_ticket}€). Considera aumentar precios en demanda alta.`
+                text: `Ticket medio bajo (${statsData.avg_ticket}€). Considera aumentar precios en demanda alta.`
             });
         }
 
@@ -506,7 +508,7 @@
 
     function renderTrendChart() {
         const ctx = document.getElementById('trend-chart').getContext('2d');
-        
+
         const dates = Object.keys(statsData.daily_income_trend).slice(-currentPeriod);
         const incomes = Object.values(statsData.daily_income_trend).slice(-currentPeriod);
 
@@ -547,9 +549,9 @@
     function renderDemandChart(demands) {
         const ctx = document.getElementById('demand-chart');
         if (!ctx) return;
-        
+
         const demandCtx = ctx.getContext('2d');
-        
+
         if (demandChart) demandChart.destroy();
 
         demandChart = new Chart(demandCtx, {
@@ -583,7 +585,7 @@
     function renderHeatmap() {
         const container = document.getElementById('heatmap-container');
         const heatmap = statsData.occupancy_by_hour_and_court;
-        
+
         if (!heatmap || Object.keys(heatmap).length === 0) {
             container.innerHTML = '<p class="text-small">Sin datos suficientes</p>';
             return;
@@ -659,9 +661,10 @@
 
     function renderPeakHours(hours) {
         const container = document.getElementById('peak-hours-container');
-        if (!hours || hours.length === 0) { 
-            container.innerHTML = '<p class="text-small">Sin datos suficientes</p>'; 
-            return; 
+        container.innerHTML = '';
+        if (!hours || hours.length === 0) {
+            container.innerHTML = '<p class="text-small">Sin datos suficientes</p>';
+            return;
         }
 
         hours.forEach(h => {
@@ -674,9 +677,10 @@
 
     function renderTopUsers(users) {
         const list = document.getElementById('top-users-list');
-        if (!users || users.length === 0) { 
-            list.innerHTML = '<li class="text-small">Sin datos suficientes</li>'; 
-            return; 
+        list.innerHTML = '';
+        if (!users || users.length === 0) {
+            list.innerHTML = '<li class="text-small">Sin datos suficientes</li>';
+            return;
         }
 
         users.forEach(u => {

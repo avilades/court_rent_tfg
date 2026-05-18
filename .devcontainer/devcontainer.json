@@ -16,8 +16,7 @@
             "extensions": [
                 "ms-python.python",
                 "ms-python.debugpy",
-                "ms-python.vscode-pylance",
-                "google.geminicodeassist"
+                "ms-python.vscode-pylance"
             ]
         }
     },

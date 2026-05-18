@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time, Float, Index
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Time, Float, Index, CheckConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -75,7 +75,7 @@ class Price(Base):
     __tablename__ = "prices"
 
     price_id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float, nullable=False)                 # Importe de la tarifa
+    amount = Column(Float, CheckConstraint('amount >= 0'), nullable=False)                 # Importe de la tarifa
     start_date = Column(DateTime, default=datetime.utcnow) # Fecha de entrada en vigor
     end_date = Column(DateTime, nullable=True)             # Fecha de fin (nulo si es la vigente)
     description = Column(String, nullable=True)

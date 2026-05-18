@@ -88,6 +88,9 @@ def update_price(data: schemas.PriceUpdate, current_user: models.User = Depends(
     if not current_user.permissions.is_admin or not current_user.permissions.can_edit_price:
         raise HTTPException(status_code=403, detail="No tienes permisos para editar precios")
 
+    if data.amount < 0:
+        raise HTTPException(status_code=400, detail="El importe debe ser un número mayor o igual a cero")
+
     # 1. Buscar el precio actual (activo) para ese demand_id
     current_price = db.query(models.Price).filter(
         models.Price.demand_id == data.demand_id,
